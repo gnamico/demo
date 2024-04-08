@@ -16,15 +16,16 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: keithweaver/aws-s3-github-action@v1.0.0 # Verifies the recursive flag
-        name: sync folder
+        name: Copy Folder
         with:
-          command: sync
+          command: cp
           source: ${{ secrets.S3_BUCKET }}
           destination: ./download/
           aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws_region: 'us-east-1'
-          flags: --recursive 
+          flags: --recursive
+
       - name: Commit changes
         run: |
          git config --local user.email "action@github.com"
