@@ -1,35 +1,33 @@
-# This is a basic workflow to help you get started with Actions
+name: Fetch data from S3
 
-name: Fetch data.
-
-# Controls when the workflow will run
+# Triggers the workflow on manual dispatch, but you can adjust this to fit your needs
 on:
   workflow_dispatch:
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
-  build:
-    # The type of runner that the job will run on
-    runs-on: ubuntu-latest
+  copy-from-s3-to-repo:
+    runs-on: ubuntu-latest # Specifies the runner
 
     steps:
-      - uses: actions/checkout@v2
-      - uses: keithweaver/aws-s3-github-action@v1.0.0 # Verifies the recursive flag
-        name: Copy Folder
-        with:
-          command: cp
-          source: ${{ secrets.S3_BUCKET }}
-          destination: ./e1/
-          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws_region: 'us-east-1'
-          flags: --recursive
+    - name: Checkout repository
+      uses: actions/checkout@v2 # Checks out your repository under $GITHUB_WORKSPACE, so your job can access it
 
-      - name: Commit changes
-        run: |
-         git config --local user.email "action@github.com"
-         git config --local user.name "GitHub Action"
-         git add .
-         git diff-index --quiet HEAD || git commit -m "{commit message}" -a
-         git push origin main:main
+    - name: Copy folder from S3
+      uses: keithweaver/aws-s3-github-action@v1.0.0 # Uses a third-party action to copy data from S3
+      with:
+        command: cp
+        source: s3://${{ secrets.AWS_S3_BUCKET }} # Ensure this is just the bucket name without 's3://'
+        destination: ./e1/ # Destination path in your repository
+        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws_region: 'us-east-1'
+        flags: --recursive # Copies data recursively
+
+    - name: Commit changes
+      run: |
+       git config --local user.email "action@github.com"
+       git config --local user.name "GitHub Action"
+       git add .
+       git commit -m "Update from S3" -a || echo "No changes to commit" # Updated to handle the case where there are no changes
+       git push || echo "No changes to push" # Updated for cases where there's nothing to commit/push
+
