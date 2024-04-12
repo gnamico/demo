@@ -22,7 +22,10 @@ jobs:
         aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws_region: ${{ secrets.AWS_REGION }}
         flags: --recursive # Copies data recursively
-
+        
+    - name: Pull latest changes from remote
+      run: git pull origin main || echo "Failed to pull changes" # Handles cases where the pull might fail
+      
     - name: Commit changes
       run: |
        git config --local user.email "action@github.com"
