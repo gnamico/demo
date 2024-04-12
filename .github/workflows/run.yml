@@ -16,7 +16,7 @@ jobs:
 
       - name: Launch EC2 Instance
         run: |
-          aws ec2 run-instances --image-id ami-051f8a213df8bc089 --count 1 --instance-type t2.micro --key-name MyKeyPair
+          aws ec2 run-instances --image-id ami-051f8a213df8bc089 --count 1 --instance-type t2.micro 
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION:  ${{ secrets.AWS_REGION }}
