@@ -20,10 +20,14 @@ resource "aws_key_pair" "deployer" {
   }
 }
 
+data "aws_vpc" "default" {
+  default = true
+}
+
 resource "aws_security_group" "ssh_sg" {
   name        = "ssh-only-sg"
   description = "Security Group for SSH access only"
-  vpc_id      = aws_vpc.default.id
+  vpc_id      = data.aws_vpc.default.id
 
   ingress {
     description      = "SSH from specific IP"
