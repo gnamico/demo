@@ -1,4 +1,4 @@
-# Establece el proveedor y la versión requerida
+# Configura el proveedor de Terraform para AWS
 terraform {
   required_providers {
     aws = {
@@ -8,12 +8,12 @@ terraform {
   }
 }
 
-# Configura el proveedor AWS
+# Establece el proveedor AWS y especifica la región
 provider "aws" {
-  region = "us-east-1" # Cambia a la región que prefieras
+  region = "us-east-1" # Ajusta a la región deseada
 }
 
-# Crea un grupo de recursos (en AWS se maneja como un concepto abstracto con tags)
+# Crea un VPC
 resource "aws_vpc" "main" {
   cidr_block = "10.0.0.0/16"
   tags = {
@@ -21,28 +21,29 @@ resource "aws_vpc" "main" {
   }
 }
 
+# Crea una subred en el VPC
 resource "aws_subnet" "main" {
   vpc_id            = aws_vpc.main.id
   cidr_block        = "10.0.1.0/24"
-  availability_zone = "eu-west-3a"
+  availability_zone = "us-east-1a"
   tags = {
     Name = "gh-actions-build-monai-models-subnet"
   }
 }
 
-# Crea una IP pública
+# Crea una dirección IP elástica
 resource "aws_eip" "public_ip" {
   vpc = true
 }
 
-# Crea una interfaz de red
+# Crea una interfaz de red con la dirección IP elástica
 resource "aws_network_interface" "main_nic" {
   subnet_id       = aws_subnet.main.id
   private_ips     = ["10.0.1.50"]
   security_groups = [aws_security_group.main.id]
 }
 
-# Crea un grupo de seguridad
+# Crea un grupo de seguridad que permite SSH
 resource "aws_security_group" "main" {
   name        = "gh-actions-build-monai-models-sg"
   description = "Allow SSH inbound traffic"
@@ -63,9 +64,15 @@ resource "aws_security_group" "main" {
   }
 }
 
-# Crea una máquina virtual
+# Define un par de claves SSH
+resource "aws_key_pair" "deployer" {
+  key_name   = "terraform-deployer-key"
+  public_key = file("/tmp/ssh_id_gh.pub")
+}
+
+# Crea una instancia EC2 que usa la interfaz de red y las claves SSH
 resource "aws_instance" "vm" {
-  ami           = "ami-123456" # Reemplaza con la AMI adecuada, por ejemplo, una AMI de Ubuntu
+  ami           = "ami-04b70fa74e45c3917" # Reemplaza con la AMI adecuada
   instance_type = "t2.medium"
   key_name      = aws_key_pair.deployer.key_name
 
@@ -84,15 +91,14 @@ resource "aws_instance" "vm" {
               #!/bin/bash
               echo 'connected!'
               EOF
+
+  tags = {
+    Name = "gh-actions-build-monai-models-vm"
+  }
 }
 
-# Crea un par de claves para SSH
-resource "aws_key_pair" "deployer" {
-  key_name   = "terraform-deployer-key"
-  public_key = file("/tmp/ssh_id_gh.pub")
-}
-
+# Salida para obtener la dirección IP pública de la instancia
 output "instance_public_ip" {
   description = "Public IP address of the instance"
-  value       = aws_eip.public_ip.public_ip
+  value       = aws_instance.vm.public_ip
 }
