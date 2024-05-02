@@ -60,17 +60,24 @@ jobs:
         run: terraform apply -auto-approve
 
       - name: Get IP address
-        run: echo "AWS_IPADDRESS=$(terraform output -raw instance_public_ip)" >> $GITHUB_ENV
-        
-      - name: Output IP address
-        run: echo "AWS_IPADDRESS=$AWS_IPADDRESS"
+        run: |
+            IP=$(terraform output -raw instance_public_ip)
+            FORMATTED_IP=$(echo "$IP" | sed 's/\./-/g')
+            echo "AWS_IPADDRESS=$FORMATTED_IP" >> $GITHUB_ENV
+            echo "AWS_IPADDRESS=$AWS_IPADDRESS"
 
+      - name: Get VM name
+        run: |
+          VM_NAME="ec2-$FORMATTED_IP.compute-1.amazonaws.com"
+          echo "VM_NAME=$VM_NAME" >> $GITHUB_ENV
+          echo "VM Name: ${{ env.VM_NAME }}"
+          
       - name: Test connection
         # We use StrictHostKeyChecking=no to accept the SSH fingerprint on the first connection
-        run: ssh -i /tmp/ssh_id_gh -o StrictHostKeyChecking=no adminuser@$AWS_IPADDRESS "sudo uname -a"
+        run: ssh -i /tmp/ssh_id_gh -o StrictHostKeyChecking=no $VM_NAME "sudo uname -a"
         
       - name: Make work dir
-        run: ssh -i /tmp/ssh_id_gh adminuser@${AWS_IPADDRESS} "mkdir /home/adminuser/work"
+        run: ssh -i /tmp/ssh_id_gh $VM_NAME "mkdir /home/adminuser/work"
         
       - name: Make work dir
-        run: ssh -i /tmp/ssh_id_gh adminuser@${AWS_IPADDRESS} "ls"
+        run: ssh -i /tmp/ssh_id_gh VM_NAME "ls"
