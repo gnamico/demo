@@ -17,6 +17,11 @@ resource "aws_key_pair" "deployer" {
   public_key = file("/tmp/ssh_id_gh.pub")
 }
 
+data "aws_security_group" "ssh_only_sg" {
+  name = "ssh-only-sg"
+}
+
+
 #data "aws_vpc" "default" {
  # default = true
 #}
@@ -50,7 +55,7 @@ resource "aws_instance" "vm" {
   ami           = "ami-04b70fa74e45c3917"
   instance_type = "t2.medium"
   key_name      = aws_key_pair.deployer.key_name
-  #vpc_security_group_ids = [aws_security_group.ssh_sg.id]
+  vpc_security_group_ids = [data.aws_security_group.ssh_only_sg.id]
 
   tags = {
     Name = "gh-actions-build-monai-models-vm"
