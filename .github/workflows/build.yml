@@ -59,12 +59,18 @@ jobs:
       - name: Terraform Apply
         run: terraform apply -auto-approve
 
-      - name: Output Public IP
-        run: |
-          echo "Instance IP: $(terraform output -raw instance_public_ip)"
+      - name: Get IP address
+        run: echo "AWS_IPADDRESS=$(terraform output -raw instance_public_ip)" >> $GITHUB_ENV
         
-      - name: Test connection and make work directory
-        run: |
-          ssh-keyscan -H "$(terraform output -raw instance_public_ip)" >> ~/.ssh/known_hosts
-          ssh -i /tmp/ssh_id_gh adminuser@$(terraform output -raw instance_public_ip) "sudo uname -a"
-          ssh -i /tmp/ssh_id_gh adminuser@$(terraform output -raw instance_public_ip) "mkdir /home/adminuser/work"
+      - name: Output IP address
+        run: echo "AWS_IPADDRESS=$AWS_IPADDRESS"
+
+      - name: Test connection
+        # We use StrictHostKeyChecking=no to accept the SSH fingerprint on the first connection
+        run: ssh -i /tmp/ssh_id_gh -o StrictHostKeyChecking=no adminuser@$AWS_IPADDRESS "sudo uname -a"
+        
+      - name: Make work dir
+        run: ssh -i /tmp/ssh_id_gh adminuser@${AWS_IPADDRESS} "mkdir /home/adminuser/work"
+        
+      - name: Make work dir
+        run: ssh -i /tmp/ssh_id_gh adminuser@${AWS_IPADDRESS} "ls"
