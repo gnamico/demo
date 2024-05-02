@@ -1,0 +1,43 @@
+name: build_and_push_models
+
+on: workflow_dispatch
+
+env:
+  AWS_ACCESS_KEY_ID: "${{ secrets.AWS_ACCESS_KEY_ID }}"
+  AWS_SECRET_ACCESS_KEY: "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+  AWS_DEFAULT_REGION: "us-east-1"
+  VERSION: "0.6.0"
+  PYTHON_VERSION: "3.8"
+
+jobs:
+  setup_and_deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show disc space
+        run: df -h
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_wrapper: false 
+      - name: Initialize a new Terraform working directory
+        run: terraform init
+      - name: Check Terraform configuration files format
+        run: terraform fmt -check
+      - name: Generate unique SSH Key
+        run: ssh-keygen -t rsa -f /tmp/ssh_id_gh -N ""
+      - name: Terraform Destroy
+        if: ${{ always() }}
+        run: terraform destroy -auto-approve
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
+
+      - name: Output Public IP
+        run: |
+          echo "Instance IP: $(terraform output -raw instance_public_ip)"
+        
+      - name: Test connection and make work directory
+        run: |
+          ssh-keyscan -H "$(terraform output -raw instance_public_ip)" >> ~/.ssh/known_hosts
+          ssh -i /tmp/ssh_id_gh adminuser@$(terraform output -raw instance_public_ip) "sudo uname -a"
+          ssh -i /tmp/ssh_id_gh adminuser@$(terraform output -raw instance_public_ip) "mkdir /home/adminuser/work"
