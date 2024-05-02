@@ -13,16 +13,6 @@ provider "aws" {
   region = "us-east-1"
 }
 
-
-resource "aws_subnet" "main" {
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = "10.0.1.0/24"
-  availability_zone = "us-east-1a"
-  tags = {
-    Name = "gh-actions-build-monai-models-subnet"
-  }
-}
-
 resource "aws_key_pair" "deployer" {
   key_name   = "terraform-deployer-key"
   public_key = file("/tmp/ssh_id_gh.pub")
