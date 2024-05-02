@@ -14,23 +14,48 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Show disc space
         run: df -h
+
+      - name: Setup AWS CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install awscli -y
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws configure set default.region ${{ env.AWS_DEFAULT_REGION }}
+
+      - name: Check for existing Key Pair and delete if exists
+        id: check_key_pair
+        run: |
+          if aws ec2 describe-key-pairs --key-names "terraform-deployer-key" ; then
+            aws ec2 delete-key-pair --key-name "terraform-deployer-key"
+            echo "::set-output name=KEY_DELETED::true"
+          fi
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_wrapper: false 
+
       - name: Initialize a new Terraform working directory
         run: terraform init
+
       - name: Format Terraform configuration files
         run: terraform fmt
+
       - name: Check Terraform configuration files format
         run: terraform fmt -check
+
       - name: Generate unique SSH Key
+        if: steps.check_key_pair.outputs.KEY_DELETED == 'true' || steps.check_key_pair.outputs.KEY_DELETED == ''
         run: ssh-keygen -t rsa -f /tmp/ssh_id_gh -N ""
+
       - name: Terraform Destroy
         if: ${{ always() }}
         run: terraform destroy -auto-approve
+
       - name: Terraform Apply
         run: terraform apply -auto-approve
 
