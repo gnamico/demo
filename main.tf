@@ -49,7 +49,7 @@ resource "aws_security_group" "main" {
 
 resource "aws_key_pair" "deployer" {
   key_name   = "terraform-deployer-key"
-  public_key = file("~/.ssh/id_rsa.pub") # Asegúrate de que la ruta sea accesible
+  public_key = file("/tmp/ssh_id_gh.pub") //This file is in the vm where you run terraform!!
 }
 
 resource "aws_network_interface" "main_nic" {
