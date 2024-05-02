@@ -16,6 +16,9 @@ provider "aws" {
 resource "aws_key_pair" "deployer" {
   key_name   = "terraform-deployer-key"
   public_key = file("/tmp/ssh_id_gh.pub")
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_instance" "vm" {
