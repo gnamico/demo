@@ -74,9 +74,11 @@ jobs:
       - name: Test connection
         run: |
           echo "Attempting to connect to: ${{ env.VM_NAME }}"
+          sleep 90
           # We use StrictHostKeyChecking=no to accept the SSH fingerprint on the first connection
           ssh -i /tmp/ssh_id_gh -o StrictHostKeyChecking=no "${{ env.VM_NAME }}" "sudo uname -a"
-        
+          continue-on-error: true
+
       - name: Make work dir
         run: ssh -i /tmp/ssh_id_gh $VM_NAME "mkdir /home/adminuser/work"
         
