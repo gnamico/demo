@@ -22,6 +22,8 @@ jobs:
           terraform_wrapper: false 
       - name: Initialize a new Terraform working directory
         run: terraform init
+      - name: Format Terraform configuration files
+        run: terraform fmt
       - name: Check Terraform configuration files format
         run: terraform fmt -check
       - name: Generate unique SSH Key
