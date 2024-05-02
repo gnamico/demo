@@ -21,7 +21,6 @@ resource "aws_key_pair" "deployer" {
 resource "aws_instance" "vm" {
   ami           = "ami-04b70fa74e45c3917"
   instance_type = "t2.medium"
-  associate_public_ip_address = true
   key_name      = aws_key_pair.deployer.key_name
 
   tags = {
