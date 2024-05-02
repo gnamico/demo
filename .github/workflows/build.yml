@@ -28,6 +28,9 @@ jobs:
         run: terraform fmt -check
       - name: Generate unique SSH Key
         run: ssh-keygen -t rsa -f /tmp/ssh_id_gh -N ""
+      - name: Terraform Destroy
+        if: ${{ always() }}
+        run: terraform destroy -auto-approve
       - name: Terraform Apply
         run: terraform apply -auto-approve
 
