@@ -1,4 +1,4 @@
-name: Monai run
+name: MONAI run
 
 on:
   workflow_dispatch:
@@ -37,16 +37,20 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: ${{ env.AWS_DEFAULT_REGION }}
 
-      - name: Start EC2 instance
+      - name: Check instance state and start if necessary
         run: |
-          aws ec2 start-instances --instance-ids ${{ steps.get_instance_id.outputs.INSTANCE_ID }}
+          INSTANCE_STATE=$(aws ec2 describe-instances --instance-ids ${{ steps.get_instance_id.outputs.INSTANCE_ID }} --query "Reservations[].Instances[].State.Name" --output text)
+          if [ "$INSTANCE_STATE" != "running" ]; then
+            aws ec2 start-instances --instance-ids ${{ steps.get_instance_id.outputs.INSTANCE_ID }}
+            while [ "$INSTANCE_STATE" != "running" ]; do
+              sleep 10
+              INSTANCE_STATE=$(aws ec2 describe-instances --instance-ids ${{ steps.get_instance_id.outputs.INSTANCE_ID }} --query "Reservations[].Instances[].State.Name" --output text)
+            done
+          fi
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: ${{ env.AWS_DEFAULT_REGION }}
-
-      - name: Wait for instance to start
-        run: sleep 30
 
       - name: Get public IP address
         id: get_instance_ip
