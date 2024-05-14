@@ -1,0 +1,72 @@
+name: Start and Connect to EC2 Instance
+
+on:
+  workflow_dispatch:
+
+env:
+  AWS_ACCESS_KEY_ID: "${{ secrets.AWS_ACCESS_KEY_ID }}"
+  AWS_SECRET_ACCESS_KEY: "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+  AWS_DEFAULT_REGION: "us-east-1"
+  VERSION: "0.6.0"
+  PYTHON_VERSION: "3.8"
+
+jobs:
+  setup_and_deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show disc space
+        run: df -h
+
+      - name: Setup AWS CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install awscli -y
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws configure set default.region ${{ env.AWS_DEFAULT_REGION }}
+
+      - name: Get instance ID
+        id: get_instance_id
+        run: |
+          INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=monai" --query "Reservations[].Instances[].InstanceId" --output text)
+          echo "::set-output name=INSTANCE_ID::$INSTANCE_ID"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ env.AWS_DEFAULT_REGION }}
+
+      - name: Start EC2 instance
+        run: |
+          aws ec2 start-instances --instance-ids ${{ steps.get_instance_id.outputs.INSTANCE_ID }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ env.AWS_DEFAULT_REGION }}
+
+      - name: Wait for instance to start
+        run: sleep 30
+
+      - name: Get public IP address
+        id: get_instance_ip
+        run: |
+          INSTANCE_IP=$(aws ec2 describe-instances --instance-ids ${{ steps.get_instance_id.outputs.INSTANCE_ID }} --query "Reservations[].Instances[].PublicIpAddress" --output text)
+          echo "::set-output name=INSTANCE_IP::$INSTANCE_IP"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ env.AWS_DEFAULT_REGION }}
+
+      - name: Decode and save PEM key
+        run: |
+          echo "${{ secrets.MONAI_KEY_BASE64 }}" | base64 --decode > monai-key.pem
+          chmod 600 monai-key.pem
+
+      - name: Connect to EC2 instance via SSH
+        run: |
+          ssh -o StrictHostKeyChecking=no -i monai-key.pem ubuntu@${{ steps.get_instance_ip.outputs.INSTANCE_IP }} "sudo uname -a"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ env.AWS_DEFAULT_REGION }}
