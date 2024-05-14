@@ -65,18 +65,21 @@ jobs:
         run: |
           echo "${{ secrets.MONAI_KEY_BASE64 }}" | base64 --decode > monai-key.pem
           chmod 600 monai-key.pem
-
+          
       - name: Connect to EC2 instance and run commands
         run: |
           ssh -o StrictHostKeyChecking=no -i monai-key.pem ubuntu@${{ steps.get_instance_ip.outputs.INSTANCE_IP }} << 'EOF'
-            # Load bash profile to ensure conda is available
-            source ~/.bashrc
-
+            # Ensure conda is initialized
+            . /home/ubuntu/anaconda3/etc/profile.d/conda.sh
+            
             # Activate conda environment
             conda activate monai
 
-            # Copy input data from S3
-            aws s3 cp s3://${{ secrets.AWS_S3_BUCKET }}/input . --recursive
+            # Create directory for input data
+            mkdir -p local_input
+
+            # Copy input data from S3 to local_input directory
+            aws s3 cp s3://${{ secrets.AWS_S3_BUCKET }}/input local_input --recursive
 
             # Run MONAI deploy
             monai-deploy run simple_app-x64-workstation-dgpu-linux-amd64:latest -i local_input -o local_output
