@@ -26,7 +26,7 @@ jobs:
 
       - name: Create SageMaker Processing Job
         run: |
-          JOB_NAME="monai-processing-job-$(date +%Y%m%d%H%M%S)"
+          JOB_NAME="monai-processing-job"
           aws sagemaker create-processing-job \
             --processing-job-name $JOB_NAME \
             --processing-resources '{"ClusterConfig":{"InstanceCount":1,"InstanceType":"ml.p2.xlarge","VolumeSizeInGB":30}}' \
