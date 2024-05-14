@@ -1,5 +1,4 @@
-name: MONAI run
-
+name: Monai run
 on:
   workflow_dispatch:
 
@@ -31,7 +30,7 @@ jobs:
         id: get_instance_id
         run: |
           INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=monai" --query "Reservations[].Instances[].InstanceId" --output text)
-          echo "::set-output name=INSTANCE_ID::$INSTANCE_ID"
+          echo "INSTANCE_ID=$INSTANCE_ID" >> $GITHUB_OUTPUT
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -56,7 +55,7 @@ jobs:
         id: get_instance_ip
         run: |
           INSTANCE_IP=$(aws ec2 describe-instances --instance-ids ${{ steps.get_instance_id.outputs.INSTANCE_ID }} --query "Reservations[].Instances[].PublicIpAddress" --output text)
-          echo "::set-output name=INSTANCE_IP::$INSTANCE_IP"
+          echo "INSTANCE_IP=$INSTANCE_IP" >> $GITHUB_OUTPUT
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -69,7 +68,7 @@ jobs:
 
       - name: Connect to EC2 instance and run commands
         run: |
-          ssh -o StrictHostKeyChecking=no -i monai-key.pem ec2-user@${{ steps.get_instance_ip.outputs.INSTANCE_IP }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no -i monai-key.pem ubuntu@${{ steps.get_instance_ip.outputs.INSTANCE_IP }} << 'EOF'
             aws s3 cp s3://${{ secrets.AWS_S3_BUCKET }}/input . --recursive
             monai-deploy run simple_app-x64-workstation-dgpu-linux-amd64:latest -i local_input -o local_output
             aws s3 cp local_output/ s3://${{ secrets.AWS_S3_BUCKET }}/output/ --recursive
