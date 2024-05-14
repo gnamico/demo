@@ -1,0 +1,38 @@
+name: Run MONAI Application on SageMaker
+
+on:
+  workflow_dispatch:
+
+env:
+  AWS_ACCESS_KEY_ID: "${{ secrets.AWS_ACCESS_KEY_ID }}"
+  AWS_SECRET_ACCESS_KEY: "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+  AWS_DEFAULT_REGION: "us-east-1"
+  ECR_REPOSITORY: "992382752149.dkr.ecr.us-east-1.amazonaws.com/monai:latest"
+  S3_BUCKET: "${{ secrets.AWS_S3_BUCKET }}"
+
+jobs:
+  run_on_sagemaker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup AWS CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y awscli
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws configure set default.region ${{ env.AWS_DEFAULT_REGION }}
+
+      - name: Create SageMaker Processing Job
+        run: |
+          JOB_NAME="monai-processing-job-$(date +%Y%m%d%H%M%S)"
+          aws sagemaker create-processing-job \
+            --processing-job-name $JOB_NAME \
+            --processing-resources '{"ClusterConfig":{"InstanceCount":1,"InstanceType":"ml.p2.xlarge","VolumeSizeInGB":30}}' \
+            --stopping-condition '{"MaxRuntimeInSeconds":3600}' \
+            --app-specification '{"ImageUri":"${{ env.ECR_REPOSITORY }}","ContainerEntrypoint":["python3","-m","monai.deploy"],"ContainerArguments":["run","/opt/ml/processing/input","/opt/ml/processing/output"]}' \
+            --role-arn arn:aws:iam::YOUR_ACCOUNT_ID:role/service-role/AmazonSageMaker-ExecutionRole-20200101T123456 \
+            --processing-inputs '[{"InputName":"input-1","S3Input":{"S3Uri":"s3://${{ secrets.AWS_S3_BUCKET }}/input","LocalPath":"/opt/ml/processing/input","S3DataType":"S3Prefix","S3InputMode":"File"}}]' \
+            --processing-output-config '[{"OutputName":"output-1","S3Output":{"S3Uri":"s3://${{ secrets.AWS_S3_BUCKET }}/output","LocalPath":"/opt/ml/processing/output","S3UploadMode":"EndOfJob"}}]'
+
