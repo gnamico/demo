@@ -69,6 +69,7 @@ jobs:
       - name: Connect to EC2 instance and run commands
         run: |
           ssh -o StrictHostKeyChecking=no -i monai-key.pem ubuntu@${{ steps.get_instance_ip.outputs.INSTANCE_IP }} << 'EOF'
+            conda activate monai
             aws s3 cp s3://${{ secrets.AWS_S3_BUCKET }}/input . --recursive
             monai-deploy run simple_app-x64-workstation-dgpu-linux-amd64:latest -i local_input -o local_output
             aws s3 cp local_output/ s3://${{ secrets.AWS_S3_BUCKET }}/output/ --recursive
