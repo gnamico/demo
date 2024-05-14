@@ -1,4 +1,4 @@
-name: Start and Connect to EC2 Instance
+name: Monai run
 
 on:
   workflow_dispatch:
@@ -63,9 +63,13 @@ jobs:
           echo "${{ secrets.MONAI_KEY_BASE64 }}" | base64 --decode > monai-key.pem
           chmod 600 monai-key.pem
 
-      - name: Connect to EC2 instance via SSH
+      - name: Connect to EC2 instance and run commands
         run: |
-          ssh -o StrictHostKeyChecking=no -i monai-key.pem ubuntu@${{ steps.get_instance_ip.outputs.INSTANCE_IP }} "sudo uname -a"
+          ssh -o StrictHostKeyChecking=no -i monai-key.pem ec2-user@${{ steps.get_instance_ip.outputs.INSTANCE_IP }} << 'EOF'
+            aws s3 cp s3://${{ secrets.AWS_S3_BUCKET }}/input . --recursive
+            monai-deploy run simple_app-x64-workstation-dgpu-linux-amd64:latest -i local_input -o local_output
+            aws s3 cp local_output/ s3://${{ secrets.AWS_S3_BUCKET }}/output/ --recursive
+          EOF
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
