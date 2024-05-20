@@ -1,0 +1,10 @@
+name: Upload to S3
+
+on: workflow_dispatch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Launch EC2 Instance
+      run: echo "hello"
