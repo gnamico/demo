@@ -79,8 +79,22 @@ jobs:
           ssh -i /tmp/ssh_id_gh -o StrictHostKeyChecking=no "${{ env.VM_NAME }}" "sudo uname -a"
         continue-on-error: true
 
-      - name: Make work dir
-        run: ssh -i /tmp/ssh_id_gh $VM_NAME "mkdir /home/adminuser/work"
+      - name: Cloning repository
+        run: ssh -i /tmp/ssh_id_gh $VM_NAME "git clone --branch main --depth 1 https://github.com/Project-MONAI/monai-deploy-app-sdk.git"
         
-      - name: Make work dir
-        run: ssh -i /tmp/ssh_id_gh VM_NAME "ls"
+      - name: Downloading model
+        run: ssh -i /tmp/ssh_id_gh VM_NAME "gdown https://drive.google.com/uc?id=1Uds8mEvdGNYUuvFpTtCQ8gNU97bAPCaQ"
+        
+      - name: Unzip the model
+        run: ssh -i /tmp/ssh_id_gh $VM_NAME "unzip -o ai_spleen_seg_bundle_data.zip"
+
+      - name: Package MONAI deploy app
+        run: |
+          ssh -i /tmp/ssh_id_gh $VM_NAME "monai-deploy package examples/apps/ai_spleen_seg_app \
+            --config examples/apps/ai_spleen_seg_app/app.yaml \
+            --tag seg_app:latest \
+            --models spleen_model/model.ts \
+            --platform x64-workstation \
+            -l DEBUG"
+
+      
