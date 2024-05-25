@@ -5,6 +5,7 @@ on: workflow_dispatch
 env:
   AWS_ACCESS_KEY_ID: "${{ secrets.AWS_ACCESS_KEY_ID }}"
   AWS_SECRET_ACCESS_KEY: "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+  AWS_ACCOUNT_ID: "${{ secrets.AWS_ACCOUNT_ID }}"
   AWS_DEFAULT_REGION: "us-east-1"
   VERSION: "0.6.0"
   PYTHON_VERSION: "3.8"
@@ -14,9 +15,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Show disc space
-        run: df -h
 
       - name: Setup AWS CLI
         run: |
@@ -77,24 +75,37 @@ jobs:
           sleep 90
           # We use StrictHostKeyChecking=no to accept the SSH fingerprint on the first connection
           ssh -i /tmp/ssh_id_gh -o StrictHostKeyChecking=no "${{ env.VM_NAME }}" "sudo uname -a"
-        continue-on-error: true
 
       - name: Cloning repository
         run: ssh -i /tmp/ssh_id_gh $VM_NAME "git clone --branch main --depth 1 https://github.com/Project-MONAI/monai-deploy-app-sdk.git"
         
       - name: Downloading model
-        run: ssh -i /tmp/ssh_id_gh VM_NAME "gdown https://drive.google.com/uc?id=1Uds8mEvdGNYUuvFpTtCQ8gNU97bAPCaQ"
-        
+        run: ssh -i /tmp/ssh_id_gh $VM_NAME "gdown https://drive.google.com/uc?id=1Uds8mEvdGNYUuvFpTtCQ8gNU97bAPCaQ"
+
       - name: Unzip the model
         run: ssh -i /tmp/ssh_id_gh $VM_NAME "unzip -o ai_spleen_seg_bundle_data.zip"
 
       - name: Package MONAI deploy app
         run: |
           ssh -i /tmp/ssh_id_gh $VM_NAME "monai-deploy package examples/apps/ai_spleen_seg_app \
-            --config examples/apps/ai_spleen_seg_app/app.yaml \
+            --config monai-deploy-app-sdk/examples/apps/ai_spleen_seg_app/app.yaml \
             --tag seg_app:latest \
             --models spleen_model/model.ts \
             --platform x64-workstation \
             -l DEBUG"
 
-      
+      - name: Login to AWS ECR
+        run: |
+          aws ecr get-login-password --region ${{ env.AWS_DEFAULT_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_DEFAULT_REGION }}.amazonaws.com
+          
+      - name: Tag Docker Image
+        run: |
+          IMAGE_NAME="monai:latest"
+          DOCKER_IMAGE="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_DEFAULT_REGION }}.amazonaws.com/${IMAGE_NAME}"
+          ssh -i /tmp/ssh_id_gh $VM_NAME "docker tag seg_app-x64-workstation-dgpu-linux-amd64:latest $DOCKER_IMAGE"
+          
+      - name: Push Docker Image
+        run: |
+          IMAGE_NAME="monai:latest"
+          DOCKER_IMAGE="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_DEFAULT_REGION }}.amazonaws.com/${IMAGE_NAME}"
+          ssh -i /tmp/ssh_id_gh $VM_NAME "docker push $DOCKER_IMAGE"
