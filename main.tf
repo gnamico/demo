@@ -52,8 +52,8 @@ data "aws_security_group" "ssh_only_sg" {
 #}
 
 resource "aws_instance" "vm" {
-  ami           = "ami-04b70fa74e45c3917"
-  instance_type = "t2.medium"
+  ami           = "ami-0ad306b0d02ab2e3b"
+  instance_type = "g4dn.xlarge"
   key_name      = aws_key_pair.deployer.key_name
   vpc_security_group_ids = [data.aws_security_group.ssh_only_sg.id]
 
