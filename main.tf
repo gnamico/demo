@@ -30,7 +30,7 @@ data "aws_security_group" "existing_ssh_only_sg" {
 }
 
 resource "aws_security_group" "ssh_only_sg" {
-  count       = length(data.aws_security_group.existing_ssh_only_sg.id) == 0 ? 1 : 0
+  count       = length(data.aws_security_group.existing_ssh_only_sg.ids) == 0 ? 1 : 0
   name        = "ssh-only-sg"
   description = "Security group for SSH access"
 
@@ -58,7 +58,7 @@ resource "aws_instance" "vm" {
   ami           = "ami-0ad306b0d02ab2e3b"
   instance_type = "g4dn.xlarge"
   key_name      = aws_key_pair.deployer.key_name
-  vpc_security_group_ids = [length(data.aws_security_group.existing_ssh_only_sg.id) > 0 ? data.aws_security_group.existing_ssh_only_sg.id : aws_security_group.ssh_only_sg[0].id]
+  vpc_security_group_ids = [length(data.aws_security_group.existing_ssh_only_sg.ids) > 0 ? data.aws_security_group.existing_ssh_only_sg.id : aws_security_group.ssh_only_sg[0].id]
 
   iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
 
@@ -67,13 +67,18 @@ resource "aws_instance" "vm" {
   }
 }
 
-data "aws_iam_role" "ec2-role" {
+data "aws_iam_role" "ec2_role" {
   name = "ec2-role"
 }
 
 resource "aws_iam_instance_profile" "ec2_profile" {
+  count = length(data.aws_iam_instance_profile.existing_profile.names) == 0 ? 1 : 0
   name = "ec2_instance_profile"
-  role = data.aws_iam_role.ec2-role.name
+  role = data.aws_iam_role.ec2_role.name
+}
+
+data "aws_iam_instance_profile" "existing_profile" {
+  name = "ec2_instance_profile"
 }
 
 data "aws_vpc" "default" {
