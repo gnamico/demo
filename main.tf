@@ -60,25 +60,11 @@ resource "aws_instance" "vm" {
   key_name      = aws_key_pair.deployer.key_name
   vpc_security_group_id = [length(data.aws_security_group.existing_ssh_only_sg.id) > 0 ? data.aws_security_group.existing_ssh_only_sg.id : aws_security_group.ssh_only_sg[0].id]
 
-  iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
+  iam_instance_profile = "ec2_instance_profile"  # Nombre del perfil de instancia existente
 
   tags = {
     Name = "gh-actions-build-monai-models-vm"
   }
-}
-
-data "aws_iam_role" "ec2_role" {
-  name = "ec2-role"
-}
-
-resource "aws_iam_instance_profile" "ec2_profile" {
-  count = length(data.aws_iam_instance_profile.existing_profile.name) == 0 ? 1 : 0
-  name = "ec2_instance_profile"
-  role = data.aws_iam_role.ec2_role.name
-}
-
-data "aws_iam_instance_profile" "existing_profile" {
-  name = "ec2_instance_profile"
 }
 
 data "aws_vpc" "default" {
