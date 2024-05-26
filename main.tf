@@ -68,7 +68,7 @@ resource "aws_instance" "vm" {
 }
 
 data "aws_iam_role" "ec2-role" {
-  name = "ec2_rol"
+  name = "ec2-role"
 }
 
 resource "aws_iam_instance_profile" "ec2_profile" {
