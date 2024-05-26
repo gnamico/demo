@@ -56,7 +56,6 @@ resource "aws_instance" "vm" {
   instance_type = "g4dn.xlarge"
   key_name      = aws_key_pair.deployer.key_name
   vpc_security_group_ids = [data.aws_security_group.ssh_only_sg.id]
-  iam_instance_profile   = "ec2_role"
 
   tags = {
     Name = "gh-actions-build-monai-models-vm"
