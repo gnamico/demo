@@ -67,13 +67,13 @@ resource "aws_instance" "vm" {
   }
 }
 
-data "aws_iam_role" "ec2_role" {
+data "aws_iam_role" "ec2-role" {
   name = "ec2_rol"
 }
 
 resource "aws_iam_instance_profile" "ec2_profile" {
   name = "ec2_instance_profile"
-  role = data.aws_iam_role.ec2_role.name
+  role = data.aws_iam_role.ec2-role.name
 }
 
 data "aws_vpc" "default" {
