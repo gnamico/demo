@@ -61,7 +61,7 @@ resource "aws_instance" "vm" {
   vpc_security_group_ids= [length(data.aws_security_group.existing_ssh_only_sg.id) > 0 ? data.aws_security_group.existing_ssh_only_sg.id : aws_security_group.ssh_only_sg[0].id]
 
   tags = {
-    Name = "gh-actions-build-monai-models-vm"
+    Name = "monai"
   }
 }
 
