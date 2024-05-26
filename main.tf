@@ -17,53 +17,70 @@ resource "aws_key_pair" "deployer" {
   public_key = file("/tmp/ssh_id_gh.pub")
 }
 
-data "aws_security_group" "ssh_only_sg" {
-  name = "ssh-only-sg"
+data "aws_security_group" "existing_ssh_only_sg" {
+  filter {
+    name   = "group-name"
+    values = ["ssh-only-sg"]
+  }
+
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.default.id]
+  }
 }
 
+resource "aws_security_group" "ssh_only_sg" {
+  count       = length(data.aws_security_group.existing_ssh_only_sg.ids) == 0 ? 1 : 0
+  name        = "ssh-only-sg"
+  description = "Security group for SSH access"
 
-#data "aws_vpc" "default" {
- # default = true
-#}
+  ingress {
+    description = "SSH from specific IP"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
-#resource "aws_security_group" "ssh_sg" {
- # name        = "ssh-only-sg"
-  #description = "Security Group for SSH access only"
-  #vpc_id      = data.aws_vpc.default.id
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
-  #ingress {
-   # description      = "SSH from specific IP"
-    #from_port        = 22
-    #to_port          = 22
-    #protocol         = "tcp"
-    #cidr_blocks      = ["0.0.0.0/0"]
-  #}
-
- # egress {
-  #  from_port        = 0
-   # to_port          = 0
-    #protocol         = "-1"
-    #cidr_blocks      = ["0.0.0.0/0"]
-  #}
-
-  #tags = {
-   # Name = "SSH Only SG"
-  #}
-#}
+  tags = {
+    Name = "SSH Only SG"
+  }
+}
 
 resource "aws_instance" "vm" {
   ami           = "ami-0ad306b0d02ab2e3b"
   instance_type = "g4dn.xlarge"
   key_name      = aws_key_pair.deployer.key_name
-  vpc_security_group_ids = [data.aws_security_group.ssh_only_sg.id]
+  vpc_security_group_ids = [length(data.aws_security_group.existing_ssh_only_sg.ids) > 0 ? data.aws_security_group.existing_ssh_only_sg.id : aws_security_group.ssh_only_sg[0].id]
+
+  iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
 
   tags = {
     Name = "gh-actions-build-monai-models-vm"
   }
 }
 
-output "instance_public_ip" {
-  description = "The public ip for ssh access"
-  value       = aws_instance.vm.public_ip 
+data "aws_iam_role" "ec2_role" {
+  name = "ec2_rol"
 }
 
+resource "aws_iam_instance_profile" "ec2_profile" {
+  name = "ec2_instance_profile"
+  role = data.aws_iam_role.ec2_role.name
+}
+
+data "aws_vpc" "default" {
+  default = true
+}
+
+output "instance_public_ip" {
+  description = "The public IP for SSH access"
+  value       = aws_instance.vm.public_ip 
+}
