@@ -98,10 +98,10 @@ jobs:
 
       - name: Package MONAI deploy app
         run: |
-          ssh -i /tmp/ssh_id_gh $VM_NAME "monai-deploy package examples/apps/ai_spleen_seg_app \
+          ssh -i /tmp/ssh_id_gh $VM_NAME "monai-deploy package monai-deploy-app-sdk/examples/apps/ai_spleen_seg_app \
             --config monai-deploy-app-sdk/examples/apps/ai_spleen_seg_app/app.yaml \
             --tag seg_app:latest \
-            --models spleen_model/model.ts \
+            --models model.ts \
             --platform x64-workstation \
             -l DEBUG"
 
