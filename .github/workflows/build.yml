@@ -83,7 +83,7 @@ jobs:
 
           # Switch to user ubuntu and update .bashrc
           ssh -i /tmp/ssh_id_gh "$VM_NAME" << EOF
-          su - ubuntu
+          sudo su - ubuntu
           source ~/.bashrc && conda activate monai
           EOF
           
