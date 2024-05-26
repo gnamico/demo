@@ -88,7 +88,7 @@ jobs:
           EOF
           
       - name: Cloning repository
-        run: ssh -i /tmp/ssh_id_gh $VM_NAME "/bin/git clone --branch main --depth 1 https://github.com/Project-MONAI/monai-deploy-app-sdk.git"
+        run: ssh -i /tmp/ssh_id_gh $VM_NAME "git clone --branch main --depth 1 https://github.com/Project-MONAI/monai-deploy-app-sdk.git"
         
       - name: Downloading model
         run: ssh -i /tmp/ssh_id_gh $VM_NAME "gdown https://drive.google.com/uc?id=1Uds8mEvdGNYUuvFpTtCQ8gNU97bAPCaQ"
