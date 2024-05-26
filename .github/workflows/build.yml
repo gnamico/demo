@@ -56,6 +56,11 @@ jobs:
 
       - name: Terraform Apply
         run: terraform apply -auto-approve
+        
+      - name: Assign IAM Role to EC2 Instance
+        run: |
+          INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=instance-state-name,Values=running" "Name=tag:Name,Values=gh-actions-build-monai-models-vm" --query "Reservations[0].Instances[0].InstanceId" --output text)
+          aws ec2 associate-iam-instance-profile --instance-id $INSTANCE_ID --iam-instance-profile Name=ec2-role
 
       - name: Get IP address
         run: |
