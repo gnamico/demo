@@ -21,10 +21,6 @@ data "aws_security_group" "ssh_only_sg" {
   name = "ssh-only-sg"
 }
 
-resource "aws_iam_instance_profile" "ec2_instance_profile" {
-  name = "ec2_instance_profile"
-  role = "ec2_role"
-}
 
 #data "aws_vpc" "default" {
  # default = true
@@ -60,7 +56,7 @@ resource "aws_instance" "vm" {
   instance_type = "g4dn.xlarge"
   key_name      = aws_key_pair.deployer.key_name
   vpc_security_group_ids = [data.aws_security_group.ssh_only_sg.id]
-  iam_instance_profile   = aws_iam_instance_profile.ec2_instance_profile.name
+  iam_instance_profile   = "ec2_role"
 
   tags = {
     Name = "gh-actions-build-monai-models-vm"
