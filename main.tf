@@ -30,7 +30,7 @@ data "aws_security_group" "existing_ssh_only_sg" {
 }
 
 resource "aws_security_group" "ssh_only_sg" {
-  count       = length(data.aws_security_group.existing_ssh_only_sg.ids) == 0 ? 1 : 0
+  count       = length(data.aws_security_group.existing_ssh_only_sg.id) == 0 ? 1 : 0
   name        = "ssh-only-sg"
   description = "Security group for SSH access"
 
