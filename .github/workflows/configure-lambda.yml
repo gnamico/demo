@@ -2,14 +2,6 @@ name: Setup Lambda and S3
 
 on: workflow_dispatch
 
-env:
-  AWS_ACCESS_KEY_ID: "${{ secrets.AWS_ACCESS_KEY_ID }}"
-  AWS_SECRET_ACCESS_KEY: "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
-  AWS_ACCOUNT_ID: "${{ secrets.AWS_ACCOUNT_ID }}"
-  AWS_DEFAULT_REGION: "us-east-1"
-  VERSION: "0.6.0"
-  PYTHON_VERSION: "3.8"
-  
 jobs:
   setup_lambda:
     runs-on: ubuntu-latest
@@ -21,7 +13,28 @@ jobs:
         run: |
           aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws configure set default.region ${{ env.AWS_DEFAULT_REGION }}
-          aws s3 ls
+          aws configure set default.region ${{ secrets.AWS_REGION }}
 
+      - name: Download setup.sh and lambda_function.py
+        run: |
+          git fetch origin main
+          git checkout origin/main -- setup.sh lambda_function.py
+          ls
 
+      - name: Update setup.sh with secrets
+        run: |
+          sed -i 's/ROLE_ARN=""/ROLE_ARN="${{ secrets.AWS_LAMBDA_ROLE }}"/' setup.sh
+          sed -i 's/REGION=""/REGION="${{ secrets.AWS_REGION }}"/' setup.sh
+          sed -i 's/BUCKET_NAME=""/BUCKET_NAME="${{ secrets.AWS_S3_BUCKET }}"/' setup.sh
+          sed -i 's/ACCOUNT_ID=""/ACCOUNT_ID="${{ secrets.AWS_ACCOUNT_ID }}"/' setup.sh
+
+      - name: Run setup.sh
+        run: |
+          chmod +x setup.sh
+          ./setup.sh
+
+      - name: Clean up
+        run: |
+          rm function.zip
+          rm s3_event_configuration.json
+          rm setup.sh
