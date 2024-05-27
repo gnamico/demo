@@ -102,8 +102,8 @@ jobs:
         run: |
           cd setup
           sed -i 's|ACCOUNT_ID=""|ACCOUNT_ID="${{ secrets.AWS_ACCOUNT_ID }}"|' ec2.sh
-          sed -i 's|ROLE_ARN=""|ROLE_ARN="${{ secrets.AWS_EC2_ROLE_NAME }}"|' ec2.sh
-          sed -i 's|DATASTORE_ID=""|DATASTORE_ID="${{ secrets.AWS_MEDICALIMAGING_ROLE }}"|' ec2.sh
+          sed -i 's|ROLE_ARN=""|ROLE_ARN="${{ secrets.AWS_MEDICALIMAGING_ROLE }}"|' ec2.sh
+          sed -i 's|DATASTORE_ID=""|DATASTORE_ID="${{ secrets.AWS_DATASTORE_ID }}"|' ec2.sh
           sed -i 's|REGION=""|REGION="${{ secrets.AWS_REGION }}"|' ec2.sh
           
       - name: Send ec2.sh to EC2 instance
