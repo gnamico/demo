@@ -17,7 +17,9 @@ jobs:
 
       - name: Download setup.sh and lambda_function.py from setup_lambda directory
         run: |
+          ls
+          echo "BEFORE"
           git fetch origin main
-          git checkout origin/main -- setup_lambda/setup.sh setup_lambda/lambda_function.py
+          git checkout origin/main -- setup_lambda
           ls
           
