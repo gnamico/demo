@@ -41,8 +41,8 @@ jobs:
       - name: Check for existing Key Pair and delete if exists
         id: check_key_pair
         run: |
-          if aws ec2 describe-key-pairs --key-names "monai-deploy-key" ; then
-            aws ec2 delete-key-pair --key-name "monai-deploy-key"
+          if aws ec2 describe-key-pairs --key-names "monai-build-key" ; then
+            aws ec2 delete-key-pair --key-name "monai-build-key"
             echo "KEY_DELETED=true" >> $GITHUB_ENV
           fi
 
