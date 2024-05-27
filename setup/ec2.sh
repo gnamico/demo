@@ -31,8 +31,8 @@ mkdir -p $INPUT_PATH
 mkdir -p $OUTPUT_PATH
 
 # Clean up any existing files in the input and output directories
-rm -rf $INPUT_PATH/*
-rm -rf $OUTPUT_PATH/*
+sudo rm -rf $INPUT_PATH/*
+sudo rm -rf $OUTPUT_PATH/*
 
 # Download the file from S3
 aws s3 cp "s3://$BUCKET_NAME/$OBJECT_KEY" "$INPUT_PATH/$(basename $OBJECT_KEY)"
