@@ -108,6 +108,7 @@ while [ $attempt -le $max_attempts ]; do
             sleep $retry
             attempt=$((attempt + 1))
         else
+            echo "DICOM import job started successfully."
             break
         fi
     done
