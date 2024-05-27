@@ -17,24 +17,7 @@ jobs:
 
       - name: Download setup.sh and lambda_function.py from setup_lambda directory
         run: |
-          cp setup_lambda/setup.sh .
-          cp setup_lambda/lambda_function.py .
+          git fetch origin main
+          git checkout origin/main -- setup_lambda/setup.sh setup_lambda/lambda_function.py
           ls
           
-      - name: Update setup.sh with secrets
-        run: |
-          sed -i 's|ROLE_ARN=""|ROLE_ARN="${{ secrets.AWS_LAMBDA_ROLE }}"|' setup.sh
-          sed -i 's|REGION=""|REGION="${{ secrets.AWS_REGION }}"|' setup.sh
-          sed -i 's|BUCKET_NAME=""|BUCKET_NAME="${{ secrets.AWS_S3_BUCKET }}"|' setup.sh
-          sed -i 's|ACCOUNT_ID=""|ACCOUNT_ID="${{ secrets.AWS_ACCOUNT_ID }}"|' setup.sh
-
-      - name: Run setup.sh
-        run: |
-          chmod +x setup.sh
-          ./setup.sh
-
-      - name: Clean up
-        run: |
-          rm function.zip
-          rm s3_event_configuration.json
-          rm setup.sh
