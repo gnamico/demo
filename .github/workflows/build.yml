@@ -108,7 +108,7 @@ jobs:
           EOF
         
       - name: Unzip the model
-        run: ssh -i /tmp/ssh_id_gh $VM_NAME "unzip -o unzip model.zip"
+        run: ssh -i /tmp/ssh_id_gh $VM_NAME "unzip -o model.zip"
 
       - name: Package MONAI deploy app
         run: |
