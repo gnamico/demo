@@ -92,6 +92,7 @@ jobs:
      
       - name: Update setup.sh with secrets
         run: |
+          cd setup
           sed -i 's|ROLE_ARN=""|ROLE_ARN="${{ secrets.AWS_LAMBDA_ROLE }}"|' setup.sh
           sed -i 's|REGION=""|REGION="${{ secrets.AWS_REGION }}"|' setup.sh
           sed -i 's|BUCKET_NAME=""|BUCKET_NAME="${{ secrets.AWS_S3_BUCKET }}"|' setup.sh
