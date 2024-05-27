@@ -3,12 +3,13 @@ name: build_and_push_models
 on: workflow_dispatch
 
 env:
-  AWS_ACCESS_KEY_ID: "${{ secrets.AWS_ACCESS_KEY_ID }}"
-  AWS_SECRET_ACCESS_KEY: "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
-  AWS_ACCOUNT_ID: "${{ secrets.AWS_ACCOUNT_ID }}"
-  AWS_DEFAULT_REGION: "us-east-1"
+  AWS_REGION: "us-east-1"
+  MONAI_APP_PATH: "monai-deploy-app-sdk/examples/apps/ai_spleen_seg_app"
+  MONAI_APP_CONFIG: "monai-deploy-app-sdk/examples/apps/ai_spleen_seg_app/app.yaml"
+  MONAI_MODEL_ZIP: "spleen_model.zip"
   VERSION: "0.6.0"
   PYTHON_VERSION: "3.8"
+  
 
 jobs:
   setup_and_deploy:
@@ -18,11 +19,9 @@ jobs:
 
       - name: Setup AWS CLI
         run: |
-          #sudo apt-get update
-          #sudo apt-get install awscli -y
           aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws configure set default.region ${{ env.AWS_DEFAULT_REGION }}
+          aws configure set default.region ${{ secrets.AWS_REGION }}
           
       - name: Check for existing EC2 instance and terminate if exists
         id: check_ec2_instance
@@ -95,21 +94,21 @@ jobs:
           for i in {1..10}; do
             ssh -i /tmp/ssh_id_gh -o StrictHostKeyChecking=no -o ConnectTimeout=10 "${{ env.VM_NAME }}" "uname -a" && break || sleep 10
           done
- 
+          
       - name: Cloning repository
-        run: ssh -i /tmp/ssh_id_gh $VM_NAME "git clone --branch main --depth 1 https://github.com/Project-MONAI/monai-deploy-app-sdk.git"
-        
+        env:
+          REPO_URL: ${{ github.repository }}
+        run: |
+          ssh -i /tmp/ssh_id_gh $VM_NAME "git clone --branch main --depth 1 https://github.com/${REPO_URL}.git"
+     
       - name: Downloading model
         run: |
           ssh -i /tmp/ssh_id_gh $VM_NAME << EOF
-          sudo su - ubuntu
-          . /home/ubuntu/anaconda3/etc/profile.d/conda.sh
-          conda activate monai
-          gdown https://drive.google.com/uc?id=1Uds8mEvdGNYUuvFpTtCQ8gNU97bAPCaQ
+          wget https://github.com/${{ github.repository }}/releases/latest/download/${{ env.MONAI_MODEL_ZIP }} -O model.zip
           EOF
         
       - name: Unzip the model
-        run: ssh -i /tmp/ssh_id_gh $VM_NAME "unzip -o ai_spleen_seg_bundle_data.zip"
+        run: ssh -i /tmp/ssh_id_gh $VM_NAME "unzip -o unzip model.zip"
 
       - name: Package MONAI deploy app
         run: |
@@ -117,8 +116,8 @@ jobs:
           sudo su - ubuntu
           . /home/ubuntu/anaconda3/etc/profile.d/conda.sh
           conda activate monai
-          monai-deploy package monai-deploy-app-sdk/examples/apps/ai_spleen_seg_app \
-            --config monai-deploy-app-sdk/examples/apps/ai_spleen_seg_app/app.yaml \
+          monai-deploy package ${{ env.MONAI_APP_PATH }} \
+            --config ${{ env.MONAI_APP_CONFIG }} \
             --tag seg_app:latest \
             --models model.ts \
             --platform x64-workstation \
@@ -127,16 +126,16 @@ jobs:
 
       - name: Login to AWS ECR
         run: |
-           ssh -i /tmp/ssh_id_gh $VM_NAME "aws ecr get-login-password --region ${{ env.AWS_DEFAULT_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_DEFAULT_REGION }}.amazonaws.com"
+           ssh -i /tmp/ssh_id_gh $VM_NAME "aws ecr get-login-password --region ${{ secrets,AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets,AWS_REGION }}.amazonaws.com"
           
       - name: Tag Docker Image
         run: |
           IMAGE_NAME="monai:latest"
-          DOCKER_IMAGE="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_DEFAULT_REGION }}.amazonaws.com/${IMAGE_NAME}"
+          DOCKER_IMAGE="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets,AWS_REGION }}.amazonaws.com/${IMAGE_NAME}"
           ssh -i /tmp/ssh_id_gh $VM_NAME "docker tag seg_app-x64-workstation-dgpu-linux-amd64:latest $DOCKER_IMAGE"
           
       - name: Push Docker Image
         run: |
           IMAGE_NAME="monai:latest"
-          DOCKER_IMAGE="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_DEFAULT_REGION }}.amazonaws.com/${IMAGE_NAME}"
+          DOCKER_IMAGE="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets,AWS_REGION }}.amazonaws.com/${IMAGE_NAME}"
           ssh -i /tmp/ssh_id_gh $VM_NAME "docker push $DOCKER_IMAGE"
