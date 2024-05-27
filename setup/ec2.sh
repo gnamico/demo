@@ -10,7 +10,7 @@ OBJECT_KEY_PARAM="s3_object_key"
 
 # Define variables
 ACCOUNT_ID=""
-ROLE_NAME=""
+ROLE_ARN=""
 DATASTORE_ID=""
 REGION=""
 
@@ -87,7 +87,7 @@ aws s3 rm s3://$BUCKET_NAME/$OBJECT_KEY
 aws medical-imaging start-dicom-import-job \
     --job-name "my-dicom-import-job" \
     --datastore-id "$DATASTORE_ID" \
-    --data-access-role-arn "arn:aws:iam::$ACCOUNT_ID:role/service-role/$ROLE_NAME" \
+    --data-access-role-arn "$ROLE_ARN" \
     --input-s3-uri "s3://$BUCKET_NAME/results/$BASE_NAME/" \
     --output-s3-uri "s3://$OUTPUT_BUCKET/$OUTPUT_HEALTHIMAGING_PATH/"
 
@@ -95,7 +95,7 @@ aws medical-imaging start-dicom-import-job \
 aws medical-imaging start-dicom-import-job \
     --job-name "my-dicom-import-job" \
     --datastore-id "$DATASTORE_ID" \
-    --data-access-role-arn "arn:aws:iam::$ACCOUNT_ID:role/service-role/$ROLE_NAME" \
+    --data-access-role-arn "$ROLE_ARN" \
     --input-s3-uri "s3://$BUCKET_NAME/infered/$BASE_NAME/" \
     --output-s3-uri "s3://$BUCKET_NAME/HealthImaging/"
 
