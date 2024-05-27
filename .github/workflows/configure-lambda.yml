@@ -109,6 +109,8 @@ jobs:
       - name: Send ec2.sh to EC2 instance
         run: |
           scp -i /tmp/ssh_id_gh -o StrictHostKeyChecking=no setup/ec2.sh ${{ env.VM_NAME }}:/home/ubuntu/ec2.sh
+          ssh -i /tmp/ssh_id_gh ${{ env.VM_NAME }} "chmod +x /home/ubuntu/ec2.sh"
+
           
       - name: Run setup.sh
         run: |
