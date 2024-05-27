@@ -4,8 +4,8 @@ on: workflow_dispatch
 
 env:
   AWS_REGION: "us-east-1"
-  MONAI_APP_PATH: "monai-deploy-app-sdk/examples/apps/ai_spleen_seg_app"
-  MONAI_APP_CONFIG: "monai-deploy-app-sdk/examples/apps/ai_spleen_seg_app/app.yaml"
+  MONAI_APP_PATH: "demo/ai_spleen_seg_app/"
+  MONAI_APP_CONFIG: "demo/ai_spleen_seg_app/app.yaml"
   MONAI_MODEL_ZIP: "spleen_model.zip"
   VERSION: "0.6.0"
   PYTHON_VERSION: "3.8"
