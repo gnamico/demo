@@ -113,8 +113,8 @@ jobs:
 
       - name: Package MONAI deploy app
         run: |
-          sudo su - ubuntu
           ssh -i /tmp/ssh_id_gh $VM_NAME << EOF
+          sudo su - ubuntu
           . /home/ubuntu/anaconda3/etc/profile.d/conda.sh
           conda activate monai
           monai-deploy package monai-deploy-app-sdk/examples/apps/ai_spleen_seg_app \
