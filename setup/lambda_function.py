@@ -16,6 +16,10 @@ def get_instance_id_by_name(name):
             {
                 'Name': 'tag:Name',
                 'Values': [name]
+            },
+            {
+                'Name': 'instance-state-name',
+                'Values': ['stopped', 'running']
             }
         ]
     )
