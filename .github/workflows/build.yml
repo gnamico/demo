@@ -92,35 +92,38 @@ jobs:
       - name: Test connection
         run: |
           echo "Attempting to connect to: ${{ env.VM_NAME }}"
-          sleep 90
-          # We use StrictHostKeyChecking=no to accept the SSH fingerprint on the first connection
-          ssh -i /tmp/ssh_id_gh -o StrictHostKeyChecking=no "${{ env.VM_NAME }}" "sudo uname -a"
-
-          # Switch to user ubuntu and update .bashrc
-          ssh -i /tmp/ssh_id_gh "$VM_NAME" << EOF
-          sudo su - ubuntu
-          . /home/ubuntu/anaconda3/etc/profile.d/conda.sh
-          conda activate monai
-          conda --version
-          EOF
-          
+          for i in {1..10}; do
+            ssh -i /tmp/ssh_id_gh -o StrictHostKeyChecking=no -o ConnectTimeout=10 "${{ env.VM_NAME }}" "uname -a" && break || sleep 10
+          done
+ 
       - name: Cloning repository
         run: ssh -i /tmp/ssh_id_gh $VM_NAME "git clone --branch main --depth 1 https://github.com/Project-MONAI/monai-deploy-app-sdk.git"
         
       - name: Downloading model
-        run: ssh -i /tmp/ssh_id_gh $VM_NAME "gdown https://drive.google.com/uc?id=1Uds8mEvdGNYUuvFpTtCQ8gNU97bAPCaQ"
-
+        run: |
+          ssh -i /tmp/ssh_id_gh $VM_NAME << EOF
+          sudo su - ubuntu
+          . /home/ubuntu/anaconda3/etc/profile.d/conda.sh
+          conda activate monai
+          gdown https://drive.google.com/uc?id=1Uds8mEvdGNYUuvFpTtCQ8gNU97bAPCaQ
+          EOF
+        
       - name: Unzip the model
         run: ssh -i /tmp/ssh_id_gh $VM_NAME "unzip -o ai_spleen_seg_bundle_data.zip"
 
       - name: Package MONAI deploy app
         run: |
-          ssh -i /tmp/ssh_id_gh $VM_NAME "monai-deploy package monai-deploy-app-sdk/examples/apps/ai_spleen_seg_app \
+          sudo su - ubuntu
+          ssh -i /tmp/ssh_id_gh $VM_NAME << EOF
+          . /home/ubuntu/anaconda3/etc/profile.d/conda.sh
+          conda activate monai
+          monai-deploy package monai-deploy-app-sdk/examples/apps/ai_spleen_seg_app \
             --config monai-deploy-app-sdk/examples/apps/ai_spleen_seg_app/app.yaml \
             --tag seg_app:latest \
             --models model.ts \
             --platform x64-workstation \
-            -l DEBUG"
+            -l DEBUG
+          EOF
 
       - name: Login to AWS ECR
         run: |
