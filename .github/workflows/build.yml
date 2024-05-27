@@ -27,7 +27,7 @@ jobs:
       - name: Check for existing EC2 instance and terminate if exists
         id: check_ec2_instance
         run: |
-          INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=monai" "Name=instance-state-name,Values=running" --query "Reservations[*].Instances[*].InstanceId" --output text)
+          INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=monai-build" "Name=instance-state-name,Values=running" --query "Reservations[*].Instances[*].InstanceId" --output text)
           if [ ! -z "$INSTANCE_ID" ]; then
             echo "Found existing EC2 instance with ID $INSTANCE_ID. Terminating..."
             aws ec2 terminate-instances --instance-ids $INSTANCE_ID
