@@ -112,6 +112,7 @@ jobs:
           
       - name: Run setup.sh
         run: |
+          cd setup
           chmod +x setup.sh
           ./setup.sh
 
