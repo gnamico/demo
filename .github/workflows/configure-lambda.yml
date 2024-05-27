@@ -15,18 +15,18 @@ jobs:
           aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws configure set default.region ${{ secrets.AWS_REGION }}
 
-      - name: Download setup.sh and lambda_function.py
+      - name: Download setup.sh and lambda_function.py from setup_lambda directory
         run: |
-          git fetch origin main
-          git checkout origin/main -- setup.sh lambda_function.py
+          cp setup_lambda/setup.sh .
+          cp setup_lambda/lambda_function.py .
           ls
-
+          
       - name: Update setup.sh with secrets
         run: |
-          sed -i 's/ROLE_ARN=""/ROLE_ARN="${{ secrets.AWS_LAMBDA_ROLE }}"/' setup.sh
-          sed -i 's/REGION=""/REGION="${{ secrets.AWS_REGION }}"/' setup.sh
-          sed -i 's/BUCKET_NAME=""/BUCKET_NAME="${{ secrets.AWS_S3_BUCKET }}"/' setup.sh
-          sed -i 's/ACCOUNT_ID=""/ACCOUNT_ID="${{ secrets.AWS_ACCOUNT_ID }}"/' setup.sh
+          sed -i 's|ROLE_ARN=""|ROLE_ARN="${{ secrets.AWS_LAMBDA_ROLE }}"|' setup.sh
+          sed -i 's|REGION=""|REGION="${{ secrets.AWS_REGION }}"|' setup.sh
+          sed -i 's|BUCKET_NAME=""|BUCKET_NAME="${{ secrets.AWS_S3_BUCKET }}"|' setup.sh
+          sed -i 's|ACCOUNT_ID=""|ACCOUNT_ID="${{ secrets.AWS_ACCOUNT_ID }}"|' setup.sh
 
       - name: Run setup.sh
         run: |
