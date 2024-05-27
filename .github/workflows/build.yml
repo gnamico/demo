@@ -23,13 +23,28 @@ jobs:
           aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws configure set default.region ${{ env.AWS_DEFAULT_REGION }}
-
+          
+      - name: Check for existing EC2 instance and terminate if exists
+        id: check_ec2_instance
+        run: |
+          INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=monai" "Name=instance-state-name,Values=running" --query "Reservations[*].Instances[*].InstanceId" --output text)
+          if [ ! -z "$INSTANCE_ID" ]; then
+            echo "Found existing EC2 instance with ID $INSTANCE_ID. Terminating..."
+            aws ec2 terminate-instances --instance-ids $INSTANCE_ID
+            echo "Waiting for termination to complete..."
+            aws ec2 wait instance-terminated --instance-ids $INSTANCE_ID
+            echo "INSTANCE_TERMINATED=true" >> $GITHUB_ENV
+          else
+            echo "No existing EC2 instance found."
+            echo "INSTANCE_TERMINATED=false" >> $GITHUB_ENV
+          fi
+          
       - name: Check for existing Key Pair and delete if exists
         id: check_key_pair
         run: |
           if aws ec2 describe-key-pairs --key-names "terraform-deployer-key" ; then
             aws ec2 delete-key-pair --key-name "terraform-deployer-key"
-            echo "::set-output name=KEY_DELETED::true"
+            echo "KEY_DELETED=true" >> $GITHUB_ENV
           fi
 
       - name: Setup Terraform
@@ -59,7 +74,7 @@ jobs:
         
       - name: Assign IAM Role to EC2 Instance
         run: |
-          INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=instance-state-name,Values=running" "Name=tag:Name,Values=gh-actions-build-monai-models-vm" --query "Reservations[0].Instances[0].InstanceId" --output text)
+          INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=instance-state-name,Values=running" "Name=tag:Name,Values=monai-build" --query "Reservations[0].Instances[0].InstanceId" --output text)
           aws ec2 associate-iam-instance-profile --instance-id $INSTANCE_ID --iam-instance-profile Name=ec2-role
 
       - name: Get IP address
