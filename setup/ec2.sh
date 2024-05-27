@@ -89,14 +89,25 @@ aws medical-imaging start-dicom-import-job \
     --datastore-id "$DATASTORE_ID" \
     --data-access-role-arn "$ROLE_ARN" \
     --input-s3-uri "s3://$BUCKET_NAME/results/$BASE_NAME/" \
-    --output-s3-uri "s3://$OUTPUT_BUCKET/$OUTPUT_HEALTHIMAGING_PATH/"
-
-# Start the DICOM import job for infered files
-aws medical-imaging start-dicom-import-job \
-    --job-name "my-dicom-import-job" \
-    --datastore-id "$DATASTORE_ID" \
-    --data-access-role-arn "$ROLE_ARN" \
-    --input-s3-uri "s3://$BUCKET_NAME/infered/$BASE_NAME/" \
     --output-s3-uri "s3://$BUCKET_NAME/HealthImaging/"
 
-echo "Script execution completed successfully."
+attempt=1
+max_attempts=10
+while [ $attempt -le $max_attempts ]; do
+        # Start the DICOM import job for infered files
+        result=$( aws medical-imaging start-dicom-import-job \
+                  --job-name "my-dicom-import-job" \
+                  --datastore-id "$DATASTORE_ID" \
+                  --data-access-role-arn "$ROLE_ARN" \
+                  --input-s3-uri "s3://$BUCKET_NAME/infered/$BASE_NAME/" \
+                  --output-s3-uri "s3://$BUCKET_NAME/HealthImaging/" 2>&1)
+        
+        if [[ $result == *"Too Many Requests"* ]]; then
+            retry=$((attempt * 10))
+            echo "Throttling exception encountered. Retrying in $retry seconds..."
+            sleep $retry
+            attempt=$((attempt + 1))
+        else
+            break
+        fi
+    done
