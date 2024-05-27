@@ -2,35 +2,117 @@ name: Setup Lambda and S3
 
 on: workflow_dispatch
 
+env:
+   INSTANCE_NAME: "monai-run"
+   KEY_NAME: "monai-run-key"
+   VERSION: "0.6.0"
+   PYTHON_VERSION: "3.8"
+
 jobs:
-  setup_lambda:
+  configure-s3-lambda-ec2:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up AWS CLI
+      - name: Setup AWS CLI
         run: |
+          #sudo apt-get update
+          #sudo apt-get install awscli -y
           aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws configure set default.region ${{ secrets.AWS_REGION }}
+          aws configure set default.region ${{ env.AWS_DEFAULT_REGION }}
+          
+      - name: Check for existing EC2 instance and terminate if exists
+        run: |
+          INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=${{ env.INSTANCE_NAME }}" "Name=instance-state-name,Values=running" --query "Reservations[*].Instances[*].InstanceId" --output text)
+          if [ ! -z "$INSTANCE_ID" ]; then
+            echo "Found existing EC2 instance with ID $INSTANCE_ID. Terminating..."
+            aws ec2 terminate-instances --instance-ids $INSTANCE_ID
+            echo "Waiting for termination to complete..."
+            aws ec2 wait instance-terminated --instance-ids $INSTANCE_ID
+            echo "INSTANCE_TERMINATED=true" >> $GITHUB_ENV
+          else
+            echo "No existing EC2 instance found."
+            echo "INSTANCE_TERMINATED=false" >> $GITHUB_ENV
+          fi
+          
+      - name: Check for existing Key Pair and delete if exists
+        run: |
+          if aws ec2 describe-key-pairs --key-names "${{ env.KEY_NAME }}" ; then
+            aws ec2 delete-key-pair --key-name "${{ env.KEY_NAME }}"
+            echo "KEY_DELETED=true" >> $GITHUB_ENV
+          fi
 
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_wrapper: false 
+
+      - name: Initialize a new Terraform working directory
+        run: terraform init
+
+      - name: Format Terraform configuration files
+        run: terraform fmt
+
+      - name: Check Terraform configuration files format
+        run: terraform fmt -check
+
+      - name: Generate unique SSH Key
+        if: steps.check_key_pair.outputs.KEY_DELETED == 'true' || steps.check_key_pair.outputs.KEY_DELETED == ''
+        run: ssh-keygen -t rsa -f /tmp/ssh_id_gh -N ""
+
+      - name: Terraform Destroy
+        if: ${{ always() }}
+        run: terraform destroy -auto-approve
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve -var "instance_name=${{ env.INSTANCE_NAME }}" -var "key_name=${{ env.KEY_NAME }}"
+        
+      - name: Assign IAM Role to EC2 Instance
+        run: |
+          INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=instance-state-name,Values=running" "Name=tag:Name,Values=monai-run" --query "Reservations[0].Instances[0].InstanceId" --output text)
+          aws ec2 associate-iam-instance-profile --instance-id $INSTANCE_ID --iam-instance-profile Name=ec2-role
+
+      - name: Get IP address
+        run: |
+          IP=$(terraform output -raw instance_public_ip)
+          echo "AWS_IPADDRESS=$IP" >> $GITHUB_ENV
+          echo "VM IP Address: $IP"
+      
+      - name: Get VM name
+        run: |
+          VM_NAME="ubuntu@${{ env.AWS_IPADDRESS }}"
+          echo "VM_NAME=$VM_NAME" >> $GITHUB_ENV
+          echo "Constructed VM Name: $VM_NAME"
+      
+      - name: Test connection
+        run: |
+          echo "Attempting to connect to: ${{ env.VM_NAME }}"
+          for i in {1..10}; do
+            ssh -i /tmp/ssh_id_gh -o StrictHostKeyChecking=no -o ConnectTimeout=10 "${{ env.VM_NAME }}" "uname -a" && break || sleep 10
+          done
+     
       - name: Update setup.sh with secrets
         run: |
-          cd setup_lambda
           sed -i 's|ROLE_ARN=""|ROLE_ARN="${{ secrets.AWS_LAMBDA_ROLE }}"|' setup.sh
           sed -i 's|REGION=""|REGION="${{ secrets.AWS_REGION }}"|' setup.sh
           sed -i 's|BUCKET_NAME=""|BUCKET_NAME="${{ secrets.AWS_S3_BUCKET }}"|' setup.sh
           sed -i 's|ACCOUNT_ID=""|ACCOUNT_ID="${{ secrets.AWS_ACCOUNT_ID }}"|' setup.sh
 
+      - name: Update ec2.sh with secrets
+        run: |
+          sed -i 's|ACCOUNT_ID=""|ACCOUNT_ID="${{ secrets.AWS_ACCOUNT_ID }}"|' ec2.sh
+          sed -i 's|ROLE_NAME=""|ROLE_NAME="${{ secrets.AWS_EC2_ROLE_NAME }}"|' ec2.sh
+          sed -i 's|DATASTORE_ID=""|DATASTORE_ID="${{ secrets.AWS_DATASTORE_ID }}"|' ec2.sh
+          sed -i 's|REGION=""|REGION="${{ secrets.AWS_REGION }}"|' ec2.sh
+          
+      - name: Send ec2.sh to EC2 instance
+        run: |
+          scp -i /tmp/ssh_id_gh -o StrictHostKeyChecking=no ec2.sh ${{ env.VM_NAME }}:/home/ubuntu/ec2.sh
+          
       - name: Run setup.sh
         run: |
           chmod +x setup.sh
           ./setup.sh
 
-      - name: Clean up
-        run: |
-          rm function.zip
-          rm s3_event_configuration.json
-          rm setup.sh
-          rm lambda_function.py
+
