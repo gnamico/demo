@@ -139,3 +139,16 @@ jobs:
           IMAGE_NAME="monai:latest"
           DOCKER_IMAGE="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${IMAGE_NAME}"
           ssh -i /tmp/ssh_id_gh $VM_NAME "docker push $DOCKER_IMAGE"
+
+      - name: Stop EC2 instance
+        run: |
+          INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=monai-build" "Name=instance-state-name,Values=running" --query "Reservations[*].Instances[*].InstanceId" --output text)
+          if [ ! -z "$INSTANCE_ID" ]; then
+            echo "Stopping EC2 instance with ID $INSTANCE_ID..."
+            aws ec2 stop-instances --instance-ids $INSTANCE_ID
+            echo "Waiting for the instance to stop..."
+            aws ec2 wait instance-stopped --instance-ids $INSTANCE_ID
+            echo "Instance stopped."
+          else
+            echo "No running EC2 instance found to stop."
+          fi
