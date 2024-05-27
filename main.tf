@@ -12,6 +12,12 @@ provider "aws" {
   region = "us-east-1"
 }
 
+variable "instance_name" {
+  description = "Name of the EC2 instance"
+  type        = string
+  default     = "monai-build"
+}
+
 resource "aws_key_pair" "deployer" {
   key_name   = "terraform-deployer-key"
   public_key = file("/tmp/ssh_id_gh.pub")
@@ -61,7 +67,7 @@ resource "aws_instance" "vm" {
   vpc_security_group_ids= [length(data.aws_security_group.existing_ssh_only_sg.id) > 0 ? data.aws_security_group.existing_ssh_only_sg.id : aws_security_group.ssh_only_sg[0].id]
 
   tags = {
-    Name = "monai-build"
+    Name = var.instance_name
   }
 }
 
