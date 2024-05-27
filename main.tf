@@ -18,8 +18,14 @@ variable "instance_name" {
   default     = "monai-build"
 }
 
+variable "key_name" {
+  description = "Name of the SSH key pair"
+  type        = string
+  default     = "monai-build-key"
+}
+
 resource "aws_key_pair" "deployer" {
-  key_name   = "terraform-deployer-key"
+  key_name   = var.key_name
   public_key = file("/tmp/ssh_id_gh.pub")
 }
 
