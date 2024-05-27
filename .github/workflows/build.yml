@@ -99,7 +99,8 @@ jobs:
           # Switch to user ubuntu and update .bashrc
           ssh -i /tmp/ssh_id_gh "$VM_NAME" << EOF
           sudo su - ubuntu
-          source ~/.bashrc && conda activate monai
+          source /home/ubuntu/anaconda3/etc/profile.d/conda.sh
+          conda activate monai
           EOF
           
       - name: Cloning repository
