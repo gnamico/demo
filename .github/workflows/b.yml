@@ -1,23 +1,15 @@
-name: Call Create File Workflow
+name: Workflow B
 
 on:
-  workflow_dispatch:
+  workflow_run:
+    workflows: ["Workflow A"]
+    types:
+      - completed
 
-jobs:
-  call-create-file:
+jobs:  
+  run_on_workflow_a_success:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
-
     steps:
-    - name: Trigger Create File Workflow
-      uses: benc-uk/workflow-dispatch@v1
-      with:
-        workflow: Create File
-
-    - name: Download a.txt
-      uses: actions/download-artifact@v2
-      with:
-        name: a.txt
-        path: /tmp
-
-    - name: Display contents of a.txt
-      run: cat /tmp/a.txt
+      - name: Run on workflow A success
+        run: echo "Workflow A completes successfully"
