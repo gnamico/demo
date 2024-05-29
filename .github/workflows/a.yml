@@ -1,0 +1,18 @@
+name: Create File
+
+on:
+  workflow_dispatch:
+
+jobs:
+  create-file:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Create a.txt in /tmp
+      run: echo "hello" > /tmp/a.txt
+
+    - name: Upload /tmp/a.txt
+      uses: actions/upload-artifact@v2
+      with:
+        name: a.txt
+        path: /tmp/a.txt
