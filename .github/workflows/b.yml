@@ -9,7 +9,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    
+    - name: run ls
+      run: ls -l
+      
     - name: Trigger Display File Workflow
       uses: ./.github/workflows/a.yml
       with:
