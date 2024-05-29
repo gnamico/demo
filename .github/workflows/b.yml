@@ -1,0 +1,23 @@
+name: Call Create File Workflow
+
+on:
+  workflow_dispatch:
+
+jobs:
+  call-create-file:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Trigger Create File Workflow
+      uses: benc-uk/workflow-dispatch@v1
+      with:
+        workflow: Create File
+
+    - name: Download a.txt
+      uses: actions/download-artifact@v2
+      with:
+        name: a.txt
+        path: /tmp
+
+    - name: Display contents of a.txt
+      run: cat /tmp/a.txt
