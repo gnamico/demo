@@ -8,6 +8,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - uses: actions/checkout@v4
+    
     - name: Trigger Display File Workflow
       uses: ./.github/workflows/a.yml
       with:
