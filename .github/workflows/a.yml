@@ -1,18 +1,12 @@
-name: Create File
+name: Workflow A
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [ "main" ]
 
 jobs:
-  create-file:
+  some_job:  
     runs-on: ubuntu-latest
-
     steps:
-    - name: Create a.txt in /tmp
-      run: echo "hello" > /tmp/a.txt
-
-    - name: Upload /tmp/a.txt
-      uses: actions/upload-artifact@v2
-      with:
-        name: a.txt
-        path: /tmp/a.txt
+      - name: Some Step 
+        run: echo "Hello!"
