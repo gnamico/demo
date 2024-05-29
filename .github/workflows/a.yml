@@ -10,8 +10,9 @@ on:
 jobs:
   display-file:
     runs-on: ubuntu-latest
-
     steps:
+    - uses: actions/checkout@v4
+    
     - name: Write text to a.txt
       run: echo "${{ inputs.text }}" > /tmp/a.txt
 
