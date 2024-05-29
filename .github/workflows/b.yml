@@ -1,15 +1,14 @@
-name: Workflow B
+name: Create File and Call Display Workflow
 
 on:
-  workflow_run:
-    workflows: ["Workflow A"]
-    types:
-      - completed
+  workflow_dispatch:
 
-jobs:  
-  run_on_workflow_a_success:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+jobs:
+  create-file-and-call-display:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Run on workflow A success
-        run: echo "Workflow A completes successfully"
+    - name: Trigger Display File Workflow
+      uses: ./.github/workflows/a.yml
+      with:
+        text: "hello"
