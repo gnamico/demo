@@ -14,14 +14,14 @@ runs:
   using: "composite"
   steps:
     - name: Check out code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
     - name: Step operations
       if: ${{ inputs.name != '' }}
       id: step1
       run: |
         echo Hello ${{ inputs.name }}
         echo List directory files
-        ls
+        ls /tmp
         echo "::set-output name=random::$(echo $RANDOM)"
       shell: bash
     - name: Step operations 2
