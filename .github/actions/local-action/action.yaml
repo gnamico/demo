@@ -21,7 +21,7 @@ runs:
       run: |
         echo Hello ${{ inputs.name }}
         echo List directory files
-        ls /tmp
+        cat /tmp/a.txt
         echo "::set-output name=random::$(echo $RANDOM)"
       shell: bash
     - name: Step operations 2
