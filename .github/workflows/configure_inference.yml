@@ -28,8 +28,6 @@ jobs:
           instance_name: "monai-run"
           key_name: "monai-run-key"
           ec2_role: "ec2-role"
-          ssh_key_path: "${{ env.SSH_KEY_PATH }}"
-          ssh_private_key_path: "${{ env.SSH_PRIVATE_KEY_PATH }}"
           aws_region: "${{ secrets.AWS_REGION }}"
 
       - name: Local Action Output ID, VM name
