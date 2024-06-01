@@ -24,8 +24,8 @@ runs:
         cat /tmp/a.txt
         echo "::set-output name=random::$(echo $RANDOM)"
       shell: bash
-    - name: Step operations 2
-      if: ${{ inputs.name == '' }}
+    - name: AWS
       run: |
-        echo Input Name is empty: ${{ inputs.name }}
-      shell: bash
+        aws s3 ls
+
+
