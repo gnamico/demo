@@ -14,6 +14,9 @@ inputs:
   ssh_key_path:
     required: true
     description: "Path to the SSH public key file"
+  aws_region:
+    required: true
+    description: "AWS Region"
 
 outputs:
   vm_name:
@@ -53,7 +56,7 @@ runs:
 
     - name: Terraform Apply
       shell: bash
-      run: terraform apply -auto-approve -var "instance_name=${{ inputs.instance_name }}" -var "key_name=${{ inputs.key_name }}" -var "ssh_key_path=${{ inputs.ssh_key_path }}"
+      run: terraform apply -auto-approve -var "instance_name=${{ inputs.instance_name }}" -var "key_name=${{ inputs.key_name }}" -var "ssh_key_path=${{ inputs.ssh_key_path }}" -var "aws_region=${{ inputs.aws_region }}"
 
     - name: Get IP address
       id: get_ip
