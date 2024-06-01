@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Variables
-FUNCTION_NAME="LambdaMonai"
+FUNCTION_NAME=""
 ROLE_ARN=""
 REGION=""
 BUCKET_NAME=""
