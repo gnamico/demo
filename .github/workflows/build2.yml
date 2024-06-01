@@ -29,7 +29,6 @@ jobs:
           echo "SSH_KEY_PATH=/tmp/ssh_id_gh.pub" >> $GITHUB_ENV
           echo "SSH_PRIVATE_KEY_PATH=/tmp/ssh_id_gh" >> $GITHUB_ENV
 
-
       - name: Local Action Call
         id: local-action
         uses: ./.github/actions/local-action
@@ -37,30 +36,14 @@ jobs:
           instance_name: "monai-build"
           key_name: "monai-build-key"
           ec2_role: "ec2-role"
-          ssh_key_path: "/tmp/ssh_id_gh.pub"
-          aws_region: ${{ secrets.AWS_REGION }}
+          ssh_key_path: "${{ env.SSH_KEY_PATH }}"
+          ssh_private_key_path: "${{ env.SSH_PRIVATE_KEY_PATH }}"
+          aws_region: "${{ secrets.AWS_REGION }}"
 
       - name: Local Action Output ID, VM name
         run: |
           echo "Instance ID: $INSTANCE_ID"
           echo "VM Name: $VM_NAME"
-          
-      - name: Test connection
-        run: |
-          echo "Attempting to connect to: ${{ env.VM_NAME }}"
-          for i in {1..10}; do
-            ssh -i  $SSH_PRIVATE_KEY_PATH -o StrictHostKeyChecking=no -o ConnectTimeout=10 $VM_NAME "uname -a" && break || sleep 10
-          done
-
-      - name: set up environment / Download MONAI
-        run: |
-           ssh -i $SSH_PRIVATE_KEY_PATH $VM_NAME << EOF
-            echo 'export PATH="$PATH:/home/ubuntu/.local/bin"' >> ~/.bashrc
-            source ~/.bashrc
-            pip install --upgrade pip
-            pip install --upgrade monai-deploy-app-sdk
-            python3.10 -m pip install --force-reinstall holoscan
-           EOF
           
       - name: Cloning repository
         env:
