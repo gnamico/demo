@@ -24,9 +24,15 @@ variable "key_name" {
   default     = "monai-build-key"
 }
 
+variable "ssh_key_path" {
+  description = "Path to the SSH public key file"
+  type        = string
+  default     = "/tmp/ssh_id_gh.pub"
+}
+
 resource "aws_key_pair" "deployer" {
   key_name   = var.key_name
-  public_key = file("/tmp/ssh_id_gh.pub")
+  public_key = file(var.ssh_key_path)
 }
 
 data "aws_security_group" "existing_ssh_only_sg" {
