@@ -63,6 +63,7 @@ jobs:
 
       - name: Update lambda_function.py with instance ID
         run: |
+          cd setup
           sed -i 's|region = ""|region = "${{ secrets.AWS_REGION }}"|' lambda_function.py
           sed -i 's|static_instance_id = ""|static_instance_id = "$INSTANCE_ID"|' lambda_function.py
           
