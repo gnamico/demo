@@ -3,6 +3,14 @@ name: 36 - Local Action
 on:
   workflow_dispatch:
 
+env:
+  AWS_REGION: "us-east-1"
+  MONAI_APP_PATH: "demo/ai_spleen_seg_app/"
+  MONAI_APP_CONFIG: "demo/ai_spleen_seg_app/app.yaml"
+  MONAI_MODEL_ZIP: "spleen_model.zip"
+  VERSION: "0.6.0"
+  PYTHON_VERSION: "3.8"
+  
 jobs:
   job1:
     runs-on: ubuntu-latest
@@ -31,5 +39,27 @@ jobs:
           
       - name: Local Action Output ID, VM name
         run: |
-          echo "Instance ID: ${{ steps.local-action.outputs.instance_id }}"
-          echo "VM Name: ${{ steps.local-action.outputs.vm_name }}"
+          echo "Instance ID: $INSTANCE_ID"
+          echo "VM Name: $VM_NAME"
+          
+      - name: Test connection
+        run: |
+          echo "Attempting to connect to: ${{ env.VM_NAME }}"
+          for i in {1..10}; do
+            ssh -i  $SSH_KEY_PATH -o StrictHostKeyChecking=no -o ConnectTimeout=10 $VM_NAME "uname -a" && break || sleep 10
+          done
+          
+      - name: Cloning repository
+        env:
+          REPO_URL: ${{ github.repository }}
+        run: |
+          ssh -i $SSH_KEY_PATH $VM_NAME "git clone --branch main --depth 1 https://github.com/${REPO_URL}.git"
+     
+      - name: Downloading model
+        run: |
+          ssh -i $SSH_KEY_PATH $VM_NAME << EOF
+          wget https://github.com/${{ github.repository }}/releases/latest/download/${{ env.MONAI_MODEL_ZIP }} -O model.zip
+          EOF
+        
+      - name: Unzip the model
+        run: ssh -i $SSH_KEY_PATH $VM_NAME "unzip -o model.zip"
