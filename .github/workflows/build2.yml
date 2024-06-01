@@ -1,5 +1,4 @@
-name: 36 - Local Action
-
+name: build_and_push_models-2
 on:
   workflow_dispatch:
 
@@ -13,7 +12,7 @@ env:
   PYTHON_VERSION: "3.8"
   
 jobs:
-  job1:
+  setup_and_deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4 # Necessary to access local action
