@@ -6,27 +6,12 @@ import logging
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-region = 'us-east-1'
+region = ''
+static_instance_id = ''
+
 ec2 = boto3.client('ec2', region_name=region)
 ssm = boto3.client('ssm', region_name=region)
 
-def get_instance_id_by_name(name):
-    response = ec2.describe_instances(
-        Filters=[
-            {
-                'Name': 'tag:Name',
-                'Values': [name]
-            },
-            {
-                'Name': 'instance-state-name',
-                'Values': ['stopped', 'running']
-            }
-        ]
-    )
-    instances = [reservation['Instances'][0]['InstanceId'] for reservation in response['Reservations']]
-    if not instances:
-        raise Exception(f"No instances found with the name {name}")
-    return instances[0]
 
 def lambda_handler(event, context):
     try:
@@ -34,9 +19,8 @@ def lambda_handler(event, context):
         bucket_name = event['Records'][0]['s3']['bucket']['name']
         object_key = event['Records'][0]['s3']['object']['key']
         
-        # Get the instance ID by name
-        instance_name = 'monai-run'
-        instance_id = get_instance_id_by_name(instance_name)
+        # Use the static instance ID
+        instance_id = static_instance_id
         
         # Check the current state of the instance
         response = ec2.describe_instances(InstanceIds=[instance_id])
