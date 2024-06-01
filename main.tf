@@ -9,7 +9,7 @@ terraform {
 }
 
 provider "aws" {
-  region = "us-east-1"
+  region = var.aws_region
 }
 
 variable "instance_name" {
@@ -28,6 +28,11 @@ variable "ssh_key_path" {
   description = "Path to the SSH public key file"
   type        = string
   default     = "/tmp/ssh_id_gh.pub"
+}
+
+variable "aws_region" {
+  description = "AWS Region"
+  type        = string
 }
 
 resource "aws_key_pair" "deployer" {
