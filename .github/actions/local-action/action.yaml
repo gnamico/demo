@@ -27,11 +27,15 @@ runs:
   using: "composite"
   steps:
     - name: Check for existing Key Pair and delete if exists
-      id: check_key_pair
       shell: bash
       run: |
         if aws ec2 describe-key-pairs --key-names "${{ inputs.key_name }}" ; then
           aws ec2 delete-key-pair --key-name "${{ inputs.key_name }}"
+
+    - name: example
+      shell: bash
+      run: |
+        echo "PROVAAAAAA"
 
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v2
