@@ -14,6 +14,9 @@ inputs:
   ssh_key_path:
     required: true
     description: "Path to the SSH public key file"
+  ssh_private_key_path:
+    required: true
+    description: "Path to the SSH private key file"
   aws_region:
     required: true
     description: "AWS Region"
@@ -87,3 +90,22 @@ runs:
       run: |
         INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=instance-state-name,Values=running" "Name=tag:Name,Values=${{ inputs.instance_name }}" --query "Reservations[0].Instances[0].InstanceId" --output text)
         aws ec2 associate-iam-instance-profile --instance-id $INSTANCE_ID --iam-instance-profile Name=${{ inputs.ec2_role }}
+
+    - name: Test connection
+      shell: bash
+      run: |
+        echo "Attempting to connect to: ${{ env.VM_NAME }}"
+        for i in {1..10}; do
+          ssh -i ${{ inputs.ssh_private_key_path }} -o StrictHostKeyChecking=no -o ConnectTimeout=10 ${{ env.VM_NAME }} "uname -a" && break || sleep 10
+        done
+
+    - name: Set up environment / Download MONAI
+      shell: bash
+      run: |
+        ssh -i ${{ inputs.ssh_private_key_path }} ${{ env.VM_NAME }} << EOF
+        echo 'export PATH="$PATH:/home/ubuntu/.local/bin"' >> ~/.bashrc
+        source ~/.bashrc
+        pip install --upgrade pip
+        pip install --upgrade monai-deploy-app-sdk
+        python3.10 -m pip install --force-reinstall holoscan
+        EOF
