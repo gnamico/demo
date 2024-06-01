@@ -65,7 +65,7 @@ jobs:
         run: |
           cd setup
           sed -i 's|region = ""|region = "${{ secrets.AWS_REGION }}"|' lambda_function.py
-          sed -i 's|static_instance_id = ""|static_instance_id = "${{ env.INSTANCE_ID }"|' lambda_function.py
+          sed -i 's|static_instance_id = ""|static_instance_id = "${{ env.INSTANCE_ID }}"|' lambda_function.py
           
       - name: Send ec2.sh to EC2 instance
         run: |
