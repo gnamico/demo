@@ -11,24 +11,21 @@ inputs:
   ec2_role:
     required: true
     description: "Name of the IAM role to assign to the EC2 instance"
-  ssh_key_path:
-    required: true
-    description: "Path to the SSH public key file"
-  ssh_private_key_path:
-    required: true
-    description: "Path to the SSH private key file"
   aws_region:
     required: true
     description: "AWS Region"
 
 outputs:
   vm_name:
-    description: "Constructed VM Name"
-    value: ${{ steps.construct_vm_name.outputs.VM_NAME }}
+    description: "VM Name"
+    value: ${{ steps.get_vm_name.outputs.VM_NAME }}
   instance_id:
     description: "The ID of the EC2 instance"
     value: ${{ steps.get_instance_id.outputs.INSTANCE_ID }}
-
+  ssh_private_key:
+    description: "Path to the SSH private key file"
+    value: ${{ steps.generate_ssh_key.outputs.SSH_PRIVATE_KEY_PATH }}
+    
 runs:
   using: "composite"
   steps:
@@ -39,6 +36,14 @@ runs:
         if aws ec2 describe-key-pairs --key-names "${{ inputs.key_name }}" ; then
           aws ec2 delete-key-pair --key-name "${{ inputs.key_name }}"
         fi
+        
+    - name: Generate SSH Key
+      id: generate_ssh_key
+      shell: bash
+      run: |
+        ssh-keygen -t rsa -f /tmp/ssh_id_gh -N ""
+        echo "SSH_KEY_PATH=/tmp/ssh_id_gh.pub" >> $GITHUB_ENV
+        echo "SSH_PRIVATE_KEY_PATH=/tmp/ssh_id_gh" >> $GITHUB_ENV
 
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v2
@@ -70,7 +75,7 @@ runs:
         echo "VM IP Address: $IP"
 
     - name: Get VM name
-      id: construct_vm_name
+      id: get_vm_name
       shell: bash
       run: |
         VM_NAME="ubuntu@${{ env.AWS_IPADDRESS }}"
