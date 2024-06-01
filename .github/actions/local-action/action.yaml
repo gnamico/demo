@@ -1,33 +1,88 @@
 name: 'Local Action'
-description: 'Runs a composite step action'
+description: 'Runs a composite step action to manage EC2 and Terraform'
+
 inputs:
-  name:
-    required: false
-    description: "Name"
+  instance_name:
+    required: true
+    description: "Name of the EC2 instance"
+  key_name:
+    required: true
+    description: "Name of the SSH key pair"
+  ec2_role:
+    required: true
+    description: "Name of the IAM role to assign to the EC2 instance"
+  ssh_key_path:
+    required: true
+    description: "Path to the SSH public key file"
 
 outputs:
-  random:
-    description: "Random number output"
-    value: ${{ steps.step1.outputs.random }}
+  vm_name:
+    description: "Constructed VM Name"
+    value: ${{ steps.construct_vm_name.outputs.VM_NAME }}
+  instance_id:
+    description: "The ID of the EC2 instance"
+    value: ${{ steps.get_instance_id.outputs.INSTANCE_ID }}
 
 runs:
   using: "composite"
   steps:
-    - name: Check out code
-      uses: actions/checkout@v4
-    - name: Step operations
-      if: ${{ inputs.name != '' }}
-      id: step1
+   - name: Check for existing EC2 instance and terminate if exists
+      id: check_ec2_instance
       run: |
-        echo Hello ${{ inputs.name }}
-        echo List directory files
-        cat /tmp/a.txt
-        echo "::set-output name=random::$(echo $RANDOM)"
-      shell: bash
-    - name: AWS
+        INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=${{ inputs.instance_name }}" "Name=instance-state-name,Values=running" --query "Reservations[*].Instances[*].InstanceId" --output text)
+        if [ ! -z "$INSTANCE_ID" ]; then
+          echo "Found existing EC2 instance with ID $INSTANCE_ID. Terminating..."
+          aws ec2 terminate-instances --instance-ids $INSTANCE_ID
+          echo "Waiting for termination to complete..."
+          aws ec2 wait instance-terminated --instance-ids $INSTANCE_ID
+        else
+          echo "No existing EC2 instance found."
+
+    - name: Check for existing Key Pair and delete if exists
+      id: check_key_pair
       run: |
-        aws s3 ls
-      shell: bash
+        if aws ec2 describe-key-pairs --key-names "${{ inputs.key_name }}" ; then
+          aws ec2 delete-key-pair --key-name "${{ inputs.key_name }}"
+          
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_wrapper: false
 
+    - name: Initialize a new Terraform working directory
+      run: terraform init
 
+    - name: Format Terraform configuration files
+      run: terraform fmt
 
+    - name: Check Terraform configuration files format
+      run: terraform fmt -check
+
+    - name: Terraform Apply
+      run: terraform apply -auto-approve -var "instance_name=${{ inputs.instance_name }}" -var "key_name=${{ inputs.key_name }}" -var "ssh_key_path=${{ inputs.ssh_key_path }}"
+
+    - name: Get IP address
+      id: get_ip
+      run: |
+        IP=$(terraform output -raw instance_public_ip)
+        echo "AWS_IPADDRESS=$IP" >> $GITHUB_ENV
+        echo "VM IP Address: $IP"
+
+    - name: Get VM name
+      id: construct_vm_name
+      run: |
+        VM_NAME="ubuntu@${{ env.AWS_IPADDRESS }}"
+        echo "VM_NAME=$VM_NAME" >> $GITHUB_ENV
+        echo "Constructed VM Name: $VM_NAME"
+
+    - name: Get Instance ID
+      id: get_instance_id
+      run: |
+        INSTANCE_ID=$(terraform output -raw instance_id)
+        echo "INSTANCE_ID=$INSTANCE_ID" >> $GITHUB_ENV
+        echo "Instance ID: $INSTANCE_ID"
+
+    - name: Assign IAM Role to EC2 Instance
+      run: |
+        INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=instance-state-name,Values=running" "Name=tag:Name,Values=${{ inputs.instance_name }}" --query "Reservations[0].Instances[0].InstanceId" --output text)
+        aws ec2 associate-iam-instance-profile --instance-id $INSTANCE_ID --iam-instance-profile Name=${{ inputs.ec2_role }}
