@@ -13,6 +13,7 @@ ACCOUNT_ID=""
 ROLE_ARN=""
 DATASTORE_ID=""
 REGION=""
+DOCKER_IMAGE_TAG="" 
 
 # Retrieve the parameters from SSM Parameter Store
 BUCKET_NAME=$(aws ssm get-parameter --name $BUCKET_NAME_PARAM --query "Parameter.Value" --output text)
@@ -61,27 +62,26 @@ fi
 sudo chown -R ubuntu:ubuntu $INPUT_PATH
 sudo chown -R ubuntu:ubuntu $OUTPUT_PATH
 
-# Activate the conda environment
-source /home/ubuntu/anaconda3/etc/profile.d/conda.sh
-conda activate monai
-
 # Docker login and pull the latest image
 aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com
-docker pull $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/monai:latest
+docker pull $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$DOCKER_IMAGE_TAG
 
 # Run monai-deploy
-monai-deploy run $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/monai:latest -i $INPUT_PATH -o $OUTPUT_PATH
+monai-deploy run $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$DOCKER_IMAGE_TAG -i $INPUT_PATH -o $OUTPUT_PATH
 
 BASE_NAME=$(basename "$OBJECT_KEY" .zip)
 
 # Upload the results to S3 under /results/$BASE_NAME/
 aws s3 cp $OUTPUT_PATH s3://$BUCKET_NAME/results/$BASE_NAME/ --recursive
 
-# Upload the input files to S3 under /infered/$BASE_NAME/
-aws s3 cp $INPUT_PATH s3://$BUCKET_NAME/infered/$BASE_NAME/ --recursive
+# Check if the file is a zip file before uploading and deleting
+if [ "$FILE_EXTENSION" == "zip" ]; then
+  # Upload the input files to S3
+  aws s3 cp $INPUT_PATH s3://$BUCKET_NAME/input/$BASE_NAME/ --recursive
 
-# Delete the downloaded file from S3 input bucket
-aws s3 rm s3://$BUCKET_NAME/$OBJECT_KEY
+  # Delete the downloaded zip from S3 input bucket
+  aws s3 rm s3://$BUCKET_NAME/$OBJECT_KEY
+fi
 
 # Start the DICOM import job for results
 aws medical-imaging start-dicom-import-job \
@@ -99,7 +99,7 @@ while [ $attempt -le $max_attempts ]; do
                   --job-name "my-dicom-import-job" \
                   --datastore-id "$DATASTORE_ID" \
                   --data-access-role-arn "$ROLE_ARN" \
-                  --input-s3-uri "s3://$BUCKET_NAME/infered/$BASE_NAME/" \
+                  --input-s3-uri "s3://$BUCKET_NAME/input/$BASE_NAME/" \
                   --output-s3-uri "s3://$BUCKET_NAME/HealthImaging/" 2>&1)
         
         if [[ $result == *"Too Many Requests"* ]]; then
