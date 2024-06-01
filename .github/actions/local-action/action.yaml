@@ -101,13 +101,13 @@ runs:
       run: |
         echo "Attempting to connect to: ${{ env.VM_NAME }}"
         for i in {1..10}; do
-          ssh -i ${{ inputs.ssh_private_key_path }} -o StrictHostKeyChecking=no -o ConnectTimeout=10 ${{ env.VM_NAME }} "uname -a" && break || sleep 10
+          ssh -i ${{ env.SSH_PRIVATE_KEY_PATH }} -o StrictHostKeyChecking=no -o ConnectTimeout=10 ${{ env.VM_NAME }} "uname -a" && break || sleep 10
         done
 
     - name: Set up environment / Download MONAI
       shell: bash
       run: |
-        ssh -i ${{ inputs.ssh_private_key_path }} ${{ env.VM_NAME }} << EOF
+        ssh -i ${{ env.SSH_PRIVATE_KEY_PATH }} ${{ env.VM_NAME }} << EOF
         echo 'export PATH="$PATH:/home/ubuntu/.local/bin"' >> ~/.bashrc
         source ~/.bashrc
         pip install --upgrade pip
