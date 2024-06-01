@@ -35,6 +35,12 @@ variable "aws_region" {
   type        = string
 }
 
+variable "disk_size" {
+  description = "Size of the disk in gigabytes"
+  type        = number
+  default     = 150
+}
+
 resource "aws_key_pair" "deployer" {
   key_name   = var.key_name
   public_key = file(var.ssh_key_path)
@@ -97,6 +103,10 @@ resource "aws_instance" "vm" {
   instance_type = "g4dn.xlarge"
   key_name      = aws_key_pair.deployer.key_name
   vpc_security_group_ids= [length(data.aws_security_group.existing_ssh_only_sg.id) > 0 ? data.aws_security_group.existing_ssh_only_sg.id : aws_security_group.ssh_only_sg[0].id]
+
+  root_block_device {
+    volume_size = var.disk_size
+  }
 
   tags = {
     Name = var.instance_name
