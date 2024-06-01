@@ -104,8 +104,9 @@ jobs:
 
       - name: Tag and Push Docker Image
         run: |
-          echo "DOCKER_IMAGE=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${REPOSITORY}:${TAG}}" >> $GITHUB_ENV
+          DOCKER_IMAGE="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${REPOSITORY}:${TAG}"
           ssh -i $SSH_PRIVATE_KEY_PATH $VM_NAME "docker tag seg_app-x64-workstation-dgpu-linux-amd64:latest $DOCKER_IMAGE"
+          echo "DOCKER_IMAGE=$DOCKER_IMAGE" >> $GITHUB_ENV
           
       - name: Push Docker Image
         run: |
