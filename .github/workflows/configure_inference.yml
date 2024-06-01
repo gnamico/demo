@@ -35,6 +35,10 @@ jobs:
           echo "Instance ID: $INSTANCE_ID"
           echo "VM Name: $VM_NAME"
 
+      - name: Login to AWS ECR
+        run: |
+           ssh -i $SSH_PRIVATE_KEY_PATH $VM_NAME "aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com"
+
       - name: Docker pull
         run: |
           ssh -i $SSH_PRIVATE_KEY_PATH $VM_NAME "docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ env.REPOSITORY }}:${{ env.TAG }}"
