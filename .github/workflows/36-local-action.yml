@@ -27,6 +27,8 @@ jobs:
         run: |
           ssh-keygen -t rsa -f /tmp/ssh_id_gh -N ""
           echo "SSH_KEY_PATH=/tmp/ssh_id_gh.pub" >> $GITHUB_ENV
+          echo "SSH_PRIVATE_KEY_PATH=/tmp/ssh_id_gh" >> $GITHUB_ENV
+
 
       - name: Local Action Call
         id: local-action
@@ -46,20 +48,20 @@ jobs:
         run: |
           echo "Attempting to connect to: ${{ env.VM_NAME }}"
           for i in {1..10}; do
-            ssh -i  $SSH_KEY_PATH -o StrictHostKeyChecking=no -o ConnectTimeout=10 $VM_NAME "uname -a" && break || sleep 10
+            ssh -i  $SSH_PRIVATE_KEY_PATH -o StrictHostKeyChecking=no -o ConnectTimeout=10 $VM_NAME "uname -a" && break || sleep 10
           done
           
       - name: Cloning repository
         env:
           REPO_URL: ${{ github.repository }}
         run: |
-          ssh -i $SSH_KEY_PATH $VM_NAME "git clone --branch main --depth 1 https://github.com/${REPO_URL}.git"
+          ssh -i $SSH_PRIVATE_KEY_PATH $VM_NAME "git clone --branch main --depth 1 https://github.com/${REPO_URL}.git"
      
       - name: Downloading model
         run: |
-          ssh -i $SSH_KEY_PATH $VM_NAME << EOF
+          ssh -i $SSH_PRIVATE_KEY_PATH $VM_NAME << EOF
           wget https://github.com/${{ github.repository }}/releases/latest/download/${{ env.MONAI_MODEL_ZIP }} -O model.zip
           EOF
         
       - name: Unzip the model
-        run: ssh -i $SSH_KEY_PATH $VM_NAME "unzip -o model.zip"
+        run: ssh -i $SSH_PRIVATE_KEY_PATH $VM_NAME "unzip -o model.zip"
