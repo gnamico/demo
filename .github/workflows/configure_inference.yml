@@ -1,0 +1,79 @@
+name: configure_inference
+on:
+  workflow_dispatch:
+
+env:
+  REPOSITORY: "monai"
+  TAG: "latest"
+  FUNCTION_NAME: "LambdaMonai"
+  VERSION: "0.6.0"
+  PYTHON_VERSION: "3.8"
+  
+jobs:
+  setup_and_deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4 # Necessary to access local action
+
+      - name: Setup AWS CLI
+        run: |
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws configure set default.region ${{ secrets.AWS_REGION }}
+          
+      - name: Generate SSH Key
+        run: |
+          ssh-keygen -t rsa -f /tmp/ssh_id_gh -N ""
+          echo "SSH_KEY_PATH=/tmp/ssh_id_gh.pub" >> $GITHUB_ENV
+          echo "SSH_PRIVATE_KEY_PATH=/tmp/ssh_id_gh" >> $GITHUB_ENV
+
+      - name: Local Action Call
+        id: local-action
+        uses: ./.github/actions/local-action
+        with:
+          instance_name: "monai-run"
+          key_name: "monai-run-key"
+          ec2_role: "ec2-role"
+          ssh_key_path: "${{ env.SSH_KEY_PATH }}"
+          ssh_private_key_path: "${{ env.SSH_PRIVATE_KEY_PATH }}"
+          aws_region: "${{ secrets.AWS_REGION }}"
+
+      - name: Local Action Output ID, VM name
+        run: |
+          echo "Instance ID: $INSTANCE_ID"
+          echo "VM Name: $VM_NAME"
+          
+      - name: Update setup.sh with secrets
+        run: |
+          cd setup
+          sed -i 's|ROLE_ARN=""|ROLE_ARN="${{ secrets.AWS_LAMBDA_ROLE }}"|' setup.sh
+          sed -i 's|REGION=""|REGION="${{ secrets.AWS_REGION }}"|' setup.sh
+          sed -i 's|BUCKET_NAME=""|BUCKET_NAME="${{ secrets.AWS_S3_BUCKET }}"|' setup.sh
+          sed -i 's|ACCOUNT_ID=""|ACCOUNT_ID="${{ secrets.AWS_ACCOUNT_ID }}"|' setup.sh
+          sed -i 's|FUNCTION_NAME=""|FUNCTION_NAME="${{ env.FUNCTION_NAME }}"|' setup.sh
+          
+      - name: Update ec2.sh with secrets
+        run: |
+          cd setup
+          sed -i 's|ACCOUNT_ID=""|ACCOUNT_ID="${{ secrets.AWS_ACCOUNT_ID }}"|' ec2.sh
+          sed -i 's|ROLE_ARN=""|ROLE_ARN="${{ secrets.AWS_MEDICALIMAGING_ROLE }}"|' ec2.sh
+          sed -i 's|DATASTORE_ID=""|DATASTORE_ID="${{ secrets.AWS_DATASTORE_ID }}"|' ec2.sh
+          sed -i 's|REGION=""|REGION="${{ secrets.AWS_REGION }}"|' ec2.sh
+          sed -i 's|DOCKER_IMAGE_TAG=""|DOCKER_IMAGE_TAG="${{ env.REPOSITORY }}:${{ env.TAG }}"|' ec2.sh
+
+      - name: Update lambda_function.py with instance ID
+        run: |
+          sed -i 's|region = ""|region = "${{ secrets.AWS_REGION }}"|' lambda_function.py
+          sed -i 's|static_instance_id = ""|static_instance_id = "$INSTANCE_ID"|' lambda_function.py
+          
+      - name: Send ec2.sh to EC2 instance
+        run: |
+          scp -i  $SSH_PRIVATE_KEY_PATH -o StrictHostKeyChecking=no setup/ec2.sh $VM_NAME:/home/ubuntu/ec2.sh
+          ssh -i $SSH_PRIVATE_KEY_PATH $VM_NAME "chmod +x /home/ubuntu/ec2.sh"
+  
+      - name: Run setup.sh
+        run: |
+          cd setup
+          chmod +x setup.sh
+          ./setup.sh
+          
