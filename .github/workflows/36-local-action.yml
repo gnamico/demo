@@ -4,10 +4,11 @@ on:
   workflow_dispatch:
 
 env:
-  AWS_REGION: "us-east-1"
   MONAI_APP_PATH: "demo/ai_spleen_seg_app/"
   MONAI_APP_CONFIG: "demo/ai_spleen_seg_app/app.yaml"
   MONAI_MODEL_ZIP: "spleen_model.zip"
+  REPOSITORY: "monai"
+  TAG: "latest"
   VERSION: "0.6.0"
   PYTHON_VERSION: "3.8"
   
@@ -38,7 +39,8 @@ jobs:
           key_name: "monai-build-key"
           ec2_role: "ec2-role"
           ssh_key_path: "/tmp/ssh_id_gh.pub"
-          
+          aws_region: ${{ secrets.AWS_REGION }}
+
       - name: Local Action Output ID, VM name
         run: |
           echo "Instance ID: $INSTANCE_ID"
@@ -50,6 +52,16 @@ jobs:
           for i in {1..10}; do
             ssh -i  $SSH_PRIVATE_KEY_PATH -o StrictHostKeyChecking=no -o ConnectTimeout=10 $VM_NAME "uname -a" && break || sleep 10
           done
+
+      - name: set up environment / Download MONAI
+        run: |
+           ssh -i $SSH_PRIVATE_KEY_PATH $VM_NAME << EOF
+            echo 'export PATH="$PATH:/home/ubuntu/.local/bin"' >> ~/.bashrc
+            source ~/.bashrc
+            pip install --upgrade pip
+            pip install --upgrade monai-deploy-app-sdk
+            python3.10 -m pip install --force-reinstall holoscan
+           EOF
           
       - name: Cloning repository
         env:
@@ -65,3 +77,38 @@ jobs:
         
       - name: Unzip the model
         run: ssh -i $SSH_PRIVATE_KEY_PATH $VM_NAME "unzip -o model.zip"
+
+      - name: Package MONAI deploy app
+        run: |
+          ssh -i $SSH_PRIVATE_KEY_PATH $VM_NAME << EOF
+          monai-deploy package ${{ env.MONAI_APP_PATH }} \
+            --config ${{ env.MONAI_APP_CONFIG }} \
+            --tag seg_app:latest \
+            --models model.ts \
+            --platform x64-workstation \
+            -l DEBUG
+          EOF
+
+      - name: Login to AWS ECR
+        run: |
+           ssh -i $SSH_PRIVATE_KEY_PATH $VM_NAME "aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com"
+
+      - name: Check and create ECR repository if not exists
+        run: |
+          if ! aws ecr describe-repositories --region ${{ secrets.AWS_REGION }} --repository-names ${{ env.REPOSITORY }} > /dev/null 2>&1; then
+            echo "Repository ${{ env.REPOSITORY }} does not exist. Creating it..."
+            aws ecr create-repository --repository-name ${{ env.REPOSITORY }} --region ${{ secrets.AWS_REGION }}
+          else
+            echo "Repository ${{ env.REPOSITORY }} already exists."
+          fi
+
+      - name: Tag and Push Docker Image
+        run: |
+          echo "DOCKER_IMAGE=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${REPOSITORY}:${TAG}}" >> $GITHUB_ENV
+          ssh -i $SSH_PRIVATE_KEY_PATH $VM_NAME "docker tag seg_app-x64-workstation-dgpu-linux-amd64:latest $DOCKER_IMAGE"
+          
+      - name: Push Docker Image
+        run: |
+          ssh -i $SSH_PRIVATE_KEY_PATH $VM_NAME "docker push $DOCKER_IMAGE"
+
+          
