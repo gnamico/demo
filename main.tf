@@ -41,7 +41,7 @@ data "aws_ami" "dlami" {
   owners      = ["amazon"]
   filter {
     name   = "name"
-    values = ["Deep Learning Base AMI (Ubuntu 22.04) *"]
+    values = ["Deep Learning Base OSS Nvidia Driver GPU AMI (Ubuntu 22.04) *"]
   }
   filter {
     name   = "state"
