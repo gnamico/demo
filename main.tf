@@ -35,6 +35,20 @@ resource "aws_key_pair" "deployer" {
   public_key = file(var.ssh_key_path)
 }
 
+
+data "aws_ami" "dlami" {
+  most_recent = true
+  owners      = ["amazon"]
+  filter {
+    name   = "name"
+    values = ["Deep Learning Base AMI (Ubuntu 22.04) *"]
+  }
+  filter {
+    name   = "state"
+    values = ["available"]
+  }
+}
+
 data "aws_security_group" "existing_ssh_only_sg" {
   filter {
     name   = "group-name"
@@ -73,7 +87,8 @@ resource "aws_security_group" "ssh_only_sg" {
 }
 
 resource "aws_instance" "vm" {
-  ami           = "ami-042c4996f2266c092"
+ # ami           = "ami-042c4996f2266c092"
+  ami           = data.aws_ami.dlami.id
   instance_type = "g4dn.xlarge"
   key_name      = aws_key_pair.deployer.key_name
   vpc_security_group_ids= [length(data.aws_security_group.existing_ssh_only_sg.id) > 0 ? data.aws_security_group.existing_ssh_only_sg.id : aws_security_group.ssh_only_sg[0].id]
