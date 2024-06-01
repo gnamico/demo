@@ -25,6 +25,9 @@ outputs:
 
 runs:
   using: "composite"
+  defaults:
+    run:
+      shell: bash
   steps:
     - name: Check for existing EC2 instance and terminate if exists
       id: check_ec2_instance
@@ -86,7 +89,3 @@ runs:
       run: |
         INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=instance-state-name,Values=running" "Name=tag:Name,Values=${{ inputs.instance_name }}" --query "Reservations[0].Instances[0].InstanceId" --output text)
         aws ec2 associate-iam-instance-profile --instance-id $INSTANCE_ID --iam-instance-profile Name=${{ inputs.ec2_role }}
-
-defaults:
-  run:
-    shell: bash
