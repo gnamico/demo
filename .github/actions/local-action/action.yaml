@@ -26,19 +26,6 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - name: Check for existing EC2 instance and terminate if exists
-      id: check_ec2_instance
-      shell: bash
-      run: |
-        INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=${{ inputs.instance_name }}" "Name=instance-state-name,Values=running" --query "Reservations[*].Instances[*].InstanceId" --output text)
-        if [ ! -z "$INSTANCE_ID" ]; then
-          echo "Found existing EC2 instance with ID $INSTANCE_ID. Terminating..."
-          aws ec2 terminate-instances --instance-ids $INSTANCE_ID
-          echo "Waiting for termination to complete..."
-          aws ec2 wait instance-terminated --instance-ids $INSTANCE_ID
-        else
-          echo "No existing EC2 instance found."
-
     - name: Check for existing Key Pair and delete if exists
       id: check_key_pair
       shell: bash
