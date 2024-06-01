@@ -27,5 +27,7 @@ runs:
     - name: AWS
       run: |
         aws s3 ls
+      shell: bash
+
 
 
