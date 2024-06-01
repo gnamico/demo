@@ -26,7 +26,7 @@ outputs:
 runs:
   using: "composite"
   steps:
-   - name: Check for existing EC2 instance and terminate if exists
+    - name: Check for existing EC2 instance and terminate if exists
       id: check_ec2_instance
       run: |
         INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=${{ inputs.instance_name }}" "Name=instance-state-name,Values=running" --query "Reservations[*].Instances[*].InstanceId" --output text)
@@ -43,7 +43,7 @@ runs:
       run: |
         if aws ec2 describe-key-pairs --key-names "${{ inputs.key_name }}" ; then
           aws ec2 delete-key-pair --key-name "${{ inputs.key_name }}"
-          
+
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v2
       with:
