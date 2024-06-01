@@ -64,7 +64,7 @@ runs:
 
     - name: Terraform Apply
       shell: bash
-      run: terraform apply -auto-approve -var "instance_name=${{ inputs.instance_name }}" -var "key_name=${{ inputs.key_name }}" -var "ssh_key_path=${{ inputs.ssh_key_path }}" -var "aws_region=${{ inputs.aws_region }}"
+      run: terraform apply -auto-approve -var "instance_name=${{ inputs.instance_name }}" -var "key_name=${{ inputs.key_name }}" -var "ssh_key_path=${{ env.SSH_KEY_PATH }}" -var "aws_region=${{ inputs.aws_region }}"
 
     - name: Get IP address
       id: get_ip
