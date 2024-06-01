@@ -70,7 +70,7 @@ aws ecr get-login-password --region $REGION | docker login --username AWS --pass
 docker pull $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$DOCKER_IMAGE_TAG
 
 # Run monai-deploy
-source ~/.bashrc
+PATH="$PATH:/home/ubuntu/.local/bin"
 monai-deploy run $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$DOCKER_IMAGE_TAG -i $INPUT_PATH -o $OUTPUT_PATH
 
 BASE_NAME=$(basename "$OBJECT_KEY" .zip)
