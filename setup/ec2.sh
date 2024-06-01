@@ -79,12 +79,16 @@ aws s3 cp $OUTPUT_PATH s3://$BUCKET_NAME/results/$BASE_NAME/ --recursive
 
 # Check if the file is a zip file before uploading and deleting
 if [ "$FILE_EXTENSION" == "zip" ]; then
-  # Upload the input files to S3
-  aws s3 cp $INPUT_PATH s3://$BUCKET_NAME/input/$BASE_NAME/ --recursive
+  # Upload the input files to S3 under /inferred/
+  aws s3 cp $INPUT_PATH s3://$BUCKET_NAME/inferred/$BASE_NAME/ --recursive
 
   # Delete the downloaded zip from S3 input bucket
   aws s3 rm s3://$BUCKET_NAME/$OBJECT_KEY
+else
+  # Move the file within S3 from /input to /inferred
+  aws s3 mv s3://$BUCKET_NAME/$OBJECT_KEY s3://$BUCKET_NAME/inferred/$(basename $OBJECT_KEY)
 fi
+
 
 # Start the DICOM import job for results
 aws medical-imaging start-dicom-import-job \
