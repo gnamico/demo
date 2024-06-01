@@ -112,4 +112,10 @@ jobs:
         run: |
           ssh -i $SSH_PRIVATE_KEY_PATH $VM_NAME "docker push $DOCKER_IMAGE"
 
+      - name: Terminate EC2 Instance
+        run: |
+          aws ec2 terminate-instances --instance-ids $INSTANCE_ID --region ${{ secrets.AWS_REGION }}
+          echo "Waiting for termination to complete..."
+          aws ec2 wait instance-terminated --instance-ids $INSTANCE_ID --region ${{ secrets.AWS_REGION }}
+          echo "Instance $INSTANCE_ID terminated."
           
