@@ -16,8 +16,8 @@ REGION=""
 DOCKER_IMAGE_TAG="" 
 
 # Retrieve the parameters from SSM Parameter Store
-BUCKET_NAME=$(aws ssm get-parameter --name $BUCKET_NAME_PARAM --query "Parameter.Value" --output text)
-OBJECT_KEY=$(aws ssm get-parameter --name $OBJECT_KEY_PARAM --query "Parameter.Value" --output text)
+BUCKET_NAME=$(aws ssm get-parameter --name $BUCKET_NAME_PARAM --query "Parameter.Value" --output text --region $REGION)
+OBJECT_KEY=$(aws ssm get-parameter --name $OBJECT_KEY_PARAM --query "Parameter.Value" --output text --region $REGION)
 
 # Check if parameters are retrieved successfully
 if [ -z "$BUCKET_NAME" ] || [ -z "$OBJECT_KEY" ]; then
