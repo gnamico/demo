@@ -76,7 +76,7 @@ jobs:
             echo "Repository ${{ env.REPOSITORY }} already exists."
           fi
 
-      - name: Tag and Push Docker Image
+      - name: Tag Docker Image
         run: |
           DOCKER_IMAGE="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${REPOSITORY}:${TAG}"
           ssh -i $SSH_PRIVATE_KEY_PATH $VM_NAME "docker tag seg_app-x64-workstation-dgpu-linux-amd64:latest $DOCKER_IMAGE"
