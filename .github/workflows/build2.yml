@@ -5,7 +5,7 @@ on:
 env:
   MONAI_APP_PATH: "demo/ai_spleen_seg_app/"
   MONAI_APP_CONFIG: "demo/ai_spleen_seg_app/app.yaml"
-  MONAI_MODEL_PATH: "demo/model/"
+  MONAI_MODEL_PATH: "demo/ai_spleen_seg_app/model/model.ts"
   EC2_ROLE_NAME: "ec2-role"
   REPOSITORY: "monai"
   TAG: "latest"
