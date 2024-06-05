@@ -53,7 +53,7 @@ def lambda_handler(event, context):
       #      Overwrite=True
       #  )
       
-        logger.info('S3 bucket name and object key stored in SSM Parameter Store')
+      #  logger.info('S3 bucket name and object key stored in SSM Parameter Store')
         
         # Send command to EC2 instance to execute script with arguments
         response = ssm.send_command(
