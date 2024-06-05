@@ -20,16 +20,16 @@ jobs:
           aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws configure set default.region ${{ secrets.AWS_REGION }}
 
-      - name: Local Action Call
-        id: local-action
-        uses: ./.github/actions/local-action
+      - name: Create-EC2 Action Call
+        id: create-ec2
+        uses: ./.github/actions/create-ec2
         with:
           instance_name: "monai-run"
           key_name: "monai-run-key"
           ec2_role: "$EC2_ROLE_NAME"
           aws_region: "${{ secrets.AWS_REGION }}"
 
-      - name: Local Action Output ID, VM name
+      - name: Create-EC2 Action Output ID, VM name
         run: |
           echo "Instance ID: $INSTANCE_ID"
           echo "VM Name: $VM_NAME"
