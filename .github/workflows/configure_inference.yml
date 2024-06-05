@@ -3,11 +3,10 @@ on:
   workflow_dispatch:
 
 env:
+  FUNCTION_NAME: "LambdaMonai"
+  EC2_ROLE_NAME: "ec2-role"
   REPOSITORY: "monai"
   TAG: "latest"
-  FUNCTION_NAME: "LambdaMonai"
-  VERSION: "0.6.0"
-  PYTHON_VERSION: "3.8"
   
 jobs:
   setup_and_deploy:
@@ -27,7 +26,7 @@ jobs:
         with:
           instance_name: "monai-run"
           key_name: "monai-run-key"
-          ec2_role: "ec2-role"
+          ec2_role: "$EC2_ROLE_NAME"
           aws_region: "${{ secrets.AWS_REGION }}"
 
       - name: Local Action Output ID, VM name
