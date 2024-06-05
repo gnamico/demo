@@ -6,8 +6,8 @@ import logging
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-region = ""
-static_instance_id = ""
+region = "us-east-1"
+static_instance_id = "i-0e31fd71e53236b01"
 
 ec2 = boto3.client('ec2', region_name=region)
 ssm = boto3.client('ssm', region_name=region)
@@ -39,31 +39,34 @@ def lambda_handler(event, context):
             logger.info('Instance is already running')
             
         # Update SSM Parameter Store
-        ssm.put_parameter(
-            Name='s3_bucket_name',
-            Value=bucket_name,
-            Type='String',
-            Overwrite=True
-        )
-        ssm.put_parameter(
-            Name='s3_object_key',
-            Value=object_key,
-            Type='String',
-            Overwrite=True
-        )
+      #  ssm.put_parameter(
+      #      Name='s3_bucket_name',
+      #      Value=bucket_name,
+      #      Type='String',
+      #      Overwrite=True
+      #  )
+      
+      #  ssm.put_parameter(
+      #      Name='s3_object_key',
+      #      Value=object_key,
+      #      Type='String',
+      #      Overwrite=True
+      #  )
+      
         logger.info('S3 bucket name and object key stored in SSM Parameter Store')
         
-        # Send command to EC2 instance to execute script
+        # Send command to EC2 instance to execute script with arguments
         response = ssm.send_command(
             InstanceIds=[instance_id],
             DocumentName="AWS-RunShellScript",
             Parameters={
                 'commands': [
-                    '/home/ubuntu/ec2.sh'
+                    f'/home/ubuntu/ec2.sh {bucket_name} {object_key}'
                 ]
             }
         )
-        logger.info('SSM Run Command sent to instance: %s', instance_id)
+        logger.info('SSM Run Command sent to instance: %s with bucket: %s and object: %s', instance_id, bucket_name, object_key)
+     
         
         return {
             'statusCode': 200,
