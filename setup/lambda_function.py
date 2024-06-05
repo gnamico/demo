@@ -61,7 +61,7 @@ def lambda_handler(event, context):
             DocumentName="AWS-RunShellScript",
             Parameters={
                 'commands': [
-                    f'/home/ubuntu/ec2.sh {bucket_name} {object_key}'
+                    f'sudo su - ubuntu -c "/home/ubuntu/ec2.sh {bucket_name} {object_key}"'
                 ]
             }
         )
