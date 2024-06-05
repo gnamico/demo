@@ -9,7 +9,7 @@ env:
   TAG: "latest"
   
 jobs:
-  setup_and_deploy:
+  setup_inference:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4 
