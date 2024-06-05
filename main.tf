@@ -116,10 +116,6 @@ resource "aws_instance" "vm" {
   }
 }
 
-data "aws_vpc" "default" {
-  default = true
-}
-
 output "instance_public_ip" {
   description = "The public IP for SSH access"
   value       = aws_instance.vm.public_ip 
