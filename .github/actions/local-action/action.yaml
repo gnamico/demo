@@ -107,9 +107,7 @@ runs:
       shell: bash
       run: |
         ssh -i ${{ env.SSH_PRIVATE_KEY_PATH }} ${{ env.VM_NAME }} << EOF
-        echo 'export PATH="$PATH:/home/ubuntu/.local/bin"' >> ~/.bashrc
-        source ~/.bashrc
-        pip install --upgrade pip
+        virtualenv monai
+        source monai/bin/activate
         pip install --upgrade monai-deploy-app-sdk
-        python3.10 -m pip install --force-reinstall holoscan
         EOF
