@@ -19,14 +19,17 @@ DOCKER_IMAGE_TAG=""
 aws configure set region $REGION
 
 # Retrieve the parameters from SSM Parameter Store
-BUCKET_NAME=$(aws ssm get-parameter --name $BUCKET_NAME_PARAM --query "Parameter.Value" --output text)
-OBJECT_KEY=$(aws ssm get-parameter --name $OBJECT_KEY_PARAM --query "Parameter.Value" --output text)
+#BUCKET_NAME=$(aws ssm get-parameter --name $BUCKET_NAME_PARAM --query "Parameter.Value" --output text)
+#OBJECT_KEY=$(aws ssm get-parameter --name $OBJECT_KEY_PARAM --query "Parameter.Value" --output text)
 
 # Check if parameters are retrieved successfully
-if [ -z "$BUCKET_NAME" ] || [ -z "$OBJECT_KEY" ]; then
-  echo "Failed to retrieve parameters from SSM Parameter Store"
-  exit 1
-fi
+#if [ -z "$BUCKET_NAME" ] || [ -z "$OBJECT_KEY" ]; then
+ # echo "Failed to retrieve parameters from SSM Parameter Store"
+  #exit 1
+#fi
+
+BUCKET_NAME=$1
+OBJECT_KEY=$2
 
 # Define the local destination paths
 INPUT_PATH="/home/ubuntu/input"
@@ -62,8 +65,8 @@ if [ "$FILE_EXTENSION" == "zip" ]; then
 fi
 
 # Change ownership of the directories
-sudo chown -R ubuntu:ubuntu $INPUT_PATH
-sudo chown -R ubuntu:ubuntu $OUTPUT_PATH
+# sudo chown -R ubuntu:ubuntu $INPUT_PATH
+# sudo chown -R ubuntu:ubuntu $OUTPUT_PATH
 
 # Docker login and pull the latest image
 aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com
