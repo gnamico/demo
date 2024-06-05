@@ -5,17 +5,17 @@ on:
 env:
   MONAI_APP_PATH: "demo/ai_spleen_seg_app/"
   MONAI_APP_CONFIG: "demo/ai_spleen_seg_app/app.yaml"
-  MONAI_MODEL_ZIP: "spleen_model.zip"
+  MONAI_MODEL_PATH: "demo/model/"
+  EC2_ROLE_NAME: "ec2-role"
   REPOSITORY: "monai"
   TAG: "latest"
-  VERSION: "0.6.0"
-  PYTHON_VERSION: "3.8"
+
   
 jobs:
   setup_and_deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4 # Necessary to access local action
+      - uses: actions/checkout@v4 
 
       - name: Setup AWS CLI
         run: |
@@ -23,16 +23,16 @@ jobs:
           aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws configure set default.region ${{ secrets.AWS_REGION }}
           
-      - name: Local Action Call
-        id: local-action
-        uses: ./.github/actions/local-action
+      - name: Create-EC2 Action Call
+        id: create-ec2
+        uses: ./.github/actions/create-ec2
         with:
           instance_name: "monai-build"
           key_name: "monai-build-key"
-          ec2_role: "ec2-role"
+          ec2_role: "$EC2_ROLE_NAME"
           aws_region: "${{ secrets.AWS_REGION }}"
 
-      - name: Local Action Output ID, VM name
+      - name: Create-EC2 Action Output ID, VM name
         run: |
           echo "Instance ID: $INSTANCE_ID"
           echo "VM Name: $VM_NAME"
@@ -42,23 +42,15 @@ jobs:
           REPO_URL: ${{ github.repository }}
         run: |
           ssh -i $SSH_PRIVATE_KEY_PATH $VM_NAME "git clone --branch main --depth 1 https://github.com/${REPO_URL}.git"
-     
-      - name: Downloading model
-        run: |
-          ssh -i $SSH_PRIVATE_KEY_PATH $VM_NAME << EOF
-          wget https://github.com/${{ github.repository }}/releases/latest/download/${{ env.MONAI_MODEL_ZIP }} -O model.zip
-          EOF
-        
-      - name: Unzip the model
-        run: ssh -i $SSH_PRIVATE_KEY_PATH $VM_NAME "unzip -o model.zip"
 
       - name: Package MONAI deploy app
         run: |
           ssh -i $SSH_PRIVATE_KEY_PATH $VM_NAME << EOF
+          source monai/bin/activate
           monai-deploy package ${{ env.MONAI_APP_PATH }} \
             --config ${{ env.MONAI_APP_CONFIG }} \
             --tag seg_app:latest \
-            --models model.ts \
+            --models ${{ env.MONAI_MODEL_PATH }} \
             --platform x64-workstation \
             -l DEBUG
           EOF
