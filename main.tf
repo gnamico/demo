@@ -15,19 +15,18 @@ provider "aws" {
 variable "instance_name" {
   description = "Name of the EC2 instance"
   type        = string
-  default     = "monai-build"
+  default     = "monai"
 }
 
 variable "key_name" {
   description = "Name of the SSH key pair"
   type        = string
-  default     = "monai-build-key"
+  default     = "monai-key"
 }
 
 variable "ssh_key_path" {
   description = "Path to the SSH public key file"
   type        = string
-  default     = "/tmp/ssh_id_gh.pub"
 }
 
 variable "aws_region" {
@@ -60,6 +59,10 @@ data "aws_ami" "dlami" {
   }
 }
 
+data "aws_vpc" "default" {
+  default = true
+}
+
 data "aws_security_group" "existing_ssh_only_sg" {
   filter {
     name   = "group-name"
@@ -73,7 +76,7 @@ data "aws_security_group" "existing_ssh_only_sg" {
 }
 
 resource "aws_security_group" "ssh_only_sg" {
-  count       = length(data.aws_security_group.existing_ssh_only_sg.id) == 0 ? 1 : 0
+  count       = length(data.aws_security_group.existing_ssh_only_sg.ids) == 0 ? 1 : 0
   name        = "ssh-only-sg"
   description = "Security group for SSH access"
 
@@ -102,7 +105,7 @@ resource "aws_instance" "vm" {
   ami           = data.aws_ami.dlami.id
   instance_type = "g4dn.xlarge"
   key_name      = aws_key_pair.deployer.key_name
-  vpc_security_group_ids= [length(data.aws_security_group.existing_ssh_only_sg.id) > 0 ? data.aws_security_group.existing_ssh_only_sg.id : aws_security_group.ssh_only_sg[0].id]
+  vpc_security_group_ids = length(data.aws_security_group.existing_ssh_only_sg.ids) > 0 ? [data.aws_security_group.existing_ssh_only_sg.ids[0]] : [aws_security_group.ssh_only_sg[0].id]
 
   root_block_device {
     volume_size = var.disk_size
